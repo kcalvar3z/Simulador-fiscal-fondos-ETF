@@ -38,3 +38,9 @@ En el reembolso, la Renta regulariza 80,00 € (1.980 − 1.900).
 - Adquisición: 40 × 50 + 10 × 40/100 = 2.000 + 4 = 2.004,00.
 - Transmisión: 40 × 60 − 5 = 2.395,00.
 - Ganancia: **391,00**. Quedan 60 part. con 6 € de comisión pendiente de imputar.
+
+## Caso E – Rendimientos negativos compensados con ganancias (art. 49.1.a LIRPF)
+
+- Saldo de rendimientos del capital mobiliario: −2.000 €. Saldo de ganancias y pérdidas patrimoniales: 4.000 €.
+- Compensable este año: 25 % × 4.000 = 1.000 €. Base del ahorro: 4.000 − 1.000 = 3.000 €.
+- Rendimientos negativos pendientes para los 4 años siguientes: 1.000 €.
