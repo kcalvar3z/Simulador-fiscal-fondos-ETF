@@ -40,8 +40,9 @@ def cuota_ahorro(
 ) -> Decimal:
     """Aplica la escala progresiva tramo a tramo: cada tramo tributa a su propio tipo.
 
-    Supuesto del simulador: el mínimo personal y familiar se absorbe íntegramente en la
-    base general, así que no minora la cuota del ahorro (art. 66.1.2.º LIRPF).
+    Supuesto del simulador: contribuyente con un salario estándar (medio o más frecuente),
+    cuya base general absorbe íntegramente el mínimo personal y familiar; por eso este no
+    minora la cuota del ahorro (art. 66.1.2.º LIRPF).
     """
     if base_liquidable_ahorro < 0:
         raise ValueError("La base liquidable del ahorro no puede ser negativa.")
