@@ -18,7 +18,7 @@
 
 ## Fuentes de apoyo
 
-- Agencia Tributaria – Manual práctico de Renta 2025, base imponible del ahorro.
+- Agencia Tributaria – Manual práctico de Renta 2025: [compensación de partidas negativas de la base del ahorro](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-ayuda-presentacion/irpf-2025/8-cumplimentacion-irpf/8_1-base-imponible-general-base-ahorro/8_1_4-compensaciones-partidas-negativas-base-ahorro.html) y [caso práctico del cap. 12](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/irpf-2025/c12-integracion-compensacion-rentas/caso-practico.html) (orden y límite conjunto del 25 % con saldos de ejercicios anteriores).
 - Guía Fiscal – Fiscalidad de los ETF en 2026.
 - Cuatrecasas – ETF extranjeros: exclusión de retención (abril 2023).
 - BBVA Mi Jubilación – Escalas de gravamen del IRPF.

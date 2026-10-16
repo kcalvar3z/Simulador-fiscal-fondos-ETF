@@ -54,11 +54,22 @@ Aplica igual en 2025 y 2026. Fuente: arts. 66 y 76 LIRPF; resumen en BBVA Mi Jub
 - La compensación funciona igual en sentido inverso: un saldo negativo de RCM se compensa con el saldo positivo de ganancias y pérdidas, con el mismo límite del 25 % (art. 49.1.a).
 - Lo que sobre se arrastra a los **cuatro ejercicios siguientes**, en el mismo orden.
 - La compensación debe hacerse por la cuantía máxima posible cada año (art. 49.2).
+- **Orden con saldos de ejercicios anteriores** (AEAT, Manual práctico de Renta 2025, cap. 12, y su caso práctico):
+  1. Saldos del propio ejercicio, compensación cruzada con el límite del 25 %.
+  2. Saldos pendientes de los cuatro ejercicios anteriores, con el saldo positivo de su **mismo** bloque, **sin límite**.
+  3. Lo que quede, con el saldo positivo restante del otro bloque. El **límite del 25 % es conjunto** con el del paso 1 (no hay un 25 % para el año y otro para el arrastre) y se calcula sobre el saldo positivo del ejercicio antes de compensaciones.
+- Lo no compensado en el cuarto año caduca.
+- `# VERIFICAR`: el orden entre ejercicios (primero los más antiguos) es el que sigue el caso práctico de la AEAT, pero el Manual no lo dice expresamente.
+
+## 7. Supuestos del simulador
+
+- **Mínimo personal y familiar**: se parte de un contribuyente con un salario estándar (medio o más frecuente), cuya base general absorbe íntegramente el mínimo personal y familiar. Por eso no minora la cuota del ahorro (art. 66.1.2.º LIRPF). Para rentas del trabajo muy bajas el cálculo sobrestimaría la cuota.
+- **Una sola entidad comercializadora** por producto (ver sección 4, art. 97.2 RIRPF).
 
 ## Fuentes
 
 - BOE – Ley 35/2006 del IRPF (texto consolidado) y RD 439/2007.
-- Agencia Tributaria – Manual práctico de Renta 2025, base imponible del ahorro.
+- Agencia Tributaria – Manual práctico de Renta 2025, base imponible del ahorro; cap. 12, integración y compensación de rentas, y su caso práctico.
 - Guía Fiscal – Fiscalidad de los ETF en 2026.
 - Cuatrecasas – ETF extranjeros: exclusión de retención (abril 2023).
 - DGT – Consulta vinculante V0796-26, de 9-4-2026 (homogeneidad de clases de un mismo fondo).

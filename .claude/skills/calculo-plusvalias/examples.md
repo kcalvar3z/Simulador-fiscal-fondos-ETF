@@ -44,3 +44,16 @@ En el reembolso, la Renta regulariza 80,00 € (1.980 − 1.900).
 - Saldo de rendimientos del capital mobiliario: −2.000 €. Saldo de ganancias y pérdidas patrimoniales: 4.000 €.
 - Compensable este año: 25 % × 4.000 = 1.000 €. Base del ahorro: 4.000 − 1.000 = 3.000 €.
 - Rendimientos negativos pendientes para los 4 años siguientes: 1.000 €.
+
+## Caso F – Saldos negativos de ejercicios anteriores (caso práctico AEAT)
+
+Manual práctico de Renta 2025, cap. 12, con los ejercicios desplazados un año (ejercicio 2026).
+
+- Saldo de rendimientos del capital mobiliario de 2026: −800 €. Ganancias 5.600 € y pérdidas 1.600 € → saldo de ganancias y pérdidas: 4.000 €.
+- Pendientes: rendimientos negativos de 2022, 500 €; pérdidas patrimoniales de 2022, 700 €, y de 2023, 2.100 €.
+- Cupo del 25 %: 25 % × 4.000 = 1.000 €.
+  1. Rendimientos negativos de 2026: 800 € (quedan 200 € de cupo).
+  2. Pérdidas de 2022 y 2023 contra ganancias, sin límite: 700 + 2.100 = 2.800 €.
+  3. Rendimientos negativos de 2022: 200 € (agotan el cupo).
+- Base del ahorro: 4.000 − 800 − 2.800 − 200 = **200,00**.
+- Los 300 € restantes de rendimientos negativos de 2022 caducan (2022 + 4 = 2026).
