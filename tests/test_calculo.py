@@ -71,6 +71,13 @@ def test_caso_d_ganancia_con_comisiones():
     assert resultado.ganancia_patrimonial == D("391")
 
 
+def test_lote_comprado_despues_de_la_venta_da_error():
+    lote = Lote(date(2026, 11, 1), D("10"), D("50"))
+    venta = Venta(date(2026, 10, 1), D("10"), D("60"))
+    with pytest.raises(ValueError, match="posterior a la venta"):
+        calcular_ganancia([lote], venta)
+
+
 def test_caso_b_retencion_del_reembolso_de_fondo():
     assert retencion(D("10000"), TipoProducto.FONDO) == D("1900")
 
