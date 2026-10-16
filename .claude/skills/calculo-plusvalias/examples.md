@@ -57,3 +57,16 @@ Manual práctico de Renta 2025, cap. 12, con los ejercicios desplazados un año 
   3. Rendimientos negativos de 2022: 200 € (agotan el cupo).
 - Base del ahorro: 4.000 − 800 − 2.800 − 200 = **200,00**.
 - Los 300 € restantes de rendimientos negativos de 2022 caducan (2022 + 4 = 2026).
+
+## Caso G – Venta con pérdida en los tres escenarios
+
+- Inversión de 20.000 € que hoy vale 18.000 €: pérdida de 2.000 €. Intereses del año: 4.000 €.
+- Sin la venta: base 4.000 → cuota 760,00. Con la venta: se compensan 1.000 € (25 %), base 3.000 → cuota 570,00.
+- Reembolso o venta de ETF: cuota atribuible **−190,00** (la pérdida ahorra impuesto), sin retención. Quedan 1.000 € de pérdida pendiente de 2026.
+- Traspaso: la pérdida también se difiere; cuota 0 e impuesto latente −190,00.
+
+## Caso H – Pérdidas a punto de caducar: reembolso frente a traspaso
+
+- Pérdidas patrimoniales pendientes de 2022: 5.000 € (2026 es el último año para compensarlas). Inversión de 20.000 € que hoy vale 21.000 €: ganancia de 1.000 €.
+- Reembolso: la ganancia se compensa con la pérdida de 2022 → cuota **0**. El fondo retiene 190,00 (19 % de 1.000), que se devuelven en la Renta. Caducan 4.000 €.
+- Traspaso: no hay ganancia que compensar → caducan los 5.000 € e impuesto latente 0 (si se reembolsara hoy, la ganancia quedaría cubierta por esas pérdidas).

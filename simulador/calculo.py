@@ -25,6 +25,8 @@ class ResultadoVenta:
 
 def calcular_ganancia(lotes: Sequence[Lote], venta: Venta) -> ResultadoVenta:
     """Ganancia o pérdida = valor de transmisión − valor de adquisición FIFO (arts. 34, 35 y 37.2 LIRPF)."""
+    if any(lote.fecha > venta.fecha for lote in lotes):
+        raise ValueError("Hay lotes con fecha de compra posterior a la venta.")
     asignacion = asignar_fifo(lotes, venta.participaciones)
     return ResultadoVenta(
         valor_transmision=venta.valor_transmision,
