@@ -6,10 +6,10 @@
 
 | Norma | Artículos usados | Enlace |
 |---|---|---|
-| Ley 35/2006, del IRPF (LIRPF) | 33.5, 34, 35, 37.2, 49, 66, 76, 94, 101.6 | [BOE-A-2006-20764](https://www.boe.es/buscar/act.php?id=BOE-A-2006-20764) |
+| Ley 35/2006, del IRPF (LIRPF) | 33.5, 34, 35, 37.2, 49, 66, 76, 94, 101.6; DT 36.ª | [BOE-A-2006-20764](https://www.boe.es/buscar/act.php?id=BOE-A-2006-20764) |
 | RD 439/2007, Reglamento del IRPF (RIRPF) | 8, 75.3.j, 96, 97 | [BOE-A-2007-6820](https://www.boe.es/buscar/act.php?id=BOE-A-2007-6820) |
 | Ley 7/2024 (escala del ahorro desde 2025) | Disposición final 7.ª | [BOE-A-2024-26694](https://www.boe.es/buscar/doc.php?id=BOE-A-2024-26694) |
-| Ley 11/2021 (exclusión del traspaso para ETF extranjeros) | — | BOE |
+| Ley 11/2021 (exclusión del traspaso para ETF extranjeros) | Arts. 3.5 y 3.7; DF 7.ª.c | [BOE-A-2021-11473](https://www.boe.es/buscar/doc.php?id=BOE-A-2021-11473) |
 | RD 249/2023 (sin retención en ETF extranjeros) | — | BOE |
 
 ## Doctrina administrativa

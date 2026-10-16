@@ -50,15 +50,17 @@ LIMITE_COMPENSACION_CRUZADA = Decimal("0.25")
 # Fuente: BOE, texto consolidado LIRPF. Verificado: 2026-10-16.
 EJERCICIOS_ARRASTRE_SALDOS_NEGATIVOS = 4
 
-# Art. 94.2.a LIRPF (redacción de la Ley 11/2021). Los ETF extranjeros quedan excluidos del
-# régimen de traspaso desde esta fecha. Solo se usa para avisos.
-# VERIFICAR: alcance exacto del régimen transitorio (adquisiciones anteriores) antes de modelizarlo.
-# Fuente: reference.md, sección 3.
+# Art. 94.2.a).3.º LIRPF (redacción del art. 3.5 de la Ley 11/2021; efectos desde el 1-1-2022
+# según su DF 7.ª.c). Los ETF extranjeros quedan excluidos del régimen de traspaso desde esta
+# fecha. Régimen transitorio en la DT 36.ª LIRPF. Solo se usa para avisos.
+# Fuente: BOE, texto consolidado LIRPF. Verificado: 2026-10-16.
+# VERIFICAR: alcance exacto del régimen transitorio (DT 36.ª) antes de modelizarlo.
 FECHA_EXCLUSION_TRASPASO_ETF_EXTRANJEROS = date(2022, 1, 1)
 
 # Art. 33.5.f y g LIRPF. Regla de recompra: plazo (antes o después de la venta con pérdida)
-# en el que la recompra de valores homogéneos impide computar la pérdida. Solo se usa para avisos.
+# en el que la recompra de valores homogéneos impide computar la pérdida: dos meses si cotizan
+# en mercados regulados, un año en otro caso. Solo se usa para avisos.
+# Fuente: BOE, texto consolidado LIRPF. Verificado: 2026-10-16.
 # VERIFICAR: plazo aplicable a participaciones de fondos no cotizados (consultas de la DGT).
-# Fuente: reference.md, sección 5.
 PLAZO_RECOMPRA_MESES_MERCADO_REGULADO = 2
 PLAZO_RECOMPRA_MESES_OTROS = 12

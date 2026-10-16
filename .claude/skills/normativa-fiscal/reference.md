@@ -28,7 +28,7 @@ Aplica igual en 2025 y 2026. Fuente: arts. 66 y 76 LIRPF; resumen en BBVA Mi Jub
 - **Fondos de inversión (no cotizados)**: el traspaso no tributa; la ganancia se difiere y las nuevas participaciones conservan el valor y la fecha de adquisición de las originales (art. 94.1.a LIRPF). Es diferimiento, no exención.
 - **ETF españoles**: excluidos del régimen de traspaso (último párrafo del art. 94.1.a LIRPF).
 - **ETF extranjeros**: excluidos desde el 1-1-2022, cualquiera que sea el mercado en que coticen (art. 94.2.a LIRPF, redacción de la Ley 11/2021).
-- **Régimen transitorio**: ETF extranjeros adquiridos antes del 1-1-2022 que no coticen en bolsa española pueden traspasarse a un fondo no cotizado, pero no a otro ETF. `# VERIFICAR` alcance exacto en la disposición transitoria antes de modelizarlo; de inicio, el simulador lo menciona como aviso, no lo calcula.
+- **Régimen transitorio** (DT 36.ª LIRPF, añadida por la Ley 11/2021): ETF extranjeros adquiridos antes del 1-1-2022 que no coticen en bolsa española pueden traspasarse a un fondo no cotizado, pero no a otro ETF. `# VERIFICAR` alcance exacto en la disposición transitoria antes de modelizarlo; de inicio, el simulador lo menciona como aviso, no lo calcula.
 
 ## 4. Retenciones
 
