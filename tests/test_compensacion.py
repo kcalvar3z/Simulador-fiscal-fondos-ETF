@@ -72,18 +72,22 @@ def test_perdidas_anteriores_contra_ganancias_del_año_no_tienen_limite():
     assert resultado == ResultadoCompensacion(base_ahorro=D("2000"))
 
 
-def test_se_compensan_primero_los_ejercicios_mas_antiguos():
+def test_se_consume_primero_la_perdida_que_caduca_este_año():
+    # Ganancias de 2026: 1.000. Pendientes: 800 de 2022 (último año para compensarla) y 800 de 2024.
+    # Más antigua primero: 800 de 2022 + 200 de 2024 → no caduca nada; 600 de 2024 siguen vivos.
+    # Con el orden inverso caducarían 600 de 2022.
     resultado = compensar_base_ahorro(
         D("0"),
         D("1000"),
         perdidas_patrimoniales_anteriores=[
-            SaldoPendiente(2024, D("800")),
-            SaldoPendiente(2023, D("800")),
+            SaldoPendiente(2024, D("800")),  # se introduce primero a propósito
+            SaldoPendiente(2022, D("800")),
         ],
     )
     assert resultado == ResultadoCompensacion(
         base_ahorro=D("0"),
         perdidas_patrimoniales_pendientes=(SaldoPendiente(2024, D("600")),),
+        perdidas_patrimoniales_caducadas=D("0"),
     )
 
 

@@ -59,7 +59,7 @@ Aplica igual en 2025 y 2026. Fuente: arts. 66 y 76 LIRPF; resumen en BBVA Mi Jub
   2. Saldos pendientes de los cuatro ejercicios anteriores, con el saldo positivo de su **mismo** bloque, **sin límite**.
   3. Lo que quede, con el saldo positivo restante del otro bloque. El **límite del 25 % es conjunto** con el del paso 1 (no hay un 25 % para el año y otro para el arrastre) y se calcula sobre el saldo positivo del ejercicio antes de compensaciones.
 - Lo no compensado en el cuarto año caduca.
-- `# VERIFICAR`: el orden entre ejercicios (primero los más antiguos) es el que sigue el caso práctico de la AEAT, pero el Manual no lo dice expresamente.
+- **Criterio adoptado**: se compensan primero los saldos pendientes más antiguos. La norma no fija orden entre ejercicios; es el criterio que aplica el caso práctico del Manual de Renta 2025 (AEAT, cap. 12) y el más favorable al contribuyente, porque, al ser obligatorio compensar el máximo posible, minimiza los saldos que caducan a los cuatro años.
 
 ## 7. Supuestos del simulador
 

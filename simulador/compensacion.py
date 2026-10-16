@@ -70,8 +70,10 @@ def compensar_base_ahorro(
     cupo_sobre_rendimientos = rendimientos * normativa.LIMITE_COMPENSACION_CRUZADA
     cupo_sobre_ganancias = ganancias * normativa.LIMITE_COMPENSACION_CRUZADA
 
-    # VERIFICAR: se compensan primero los ejercicios más antiguos. Es el orden que sigue el
-    # caso práctico de la AEAT, pero el Manual no lo dice expresamente.
+    # Criterio adoptado: se compensan primero los saldos pendientes más antiguos. La norma no
+    # fija orden entre ejercicios; es el criterio que aplica el caso práctico del Manual de
+    # Renta 2025 (AEAT, cap. 12) y el más favorable al contribuyente, porque, al ser obligatorio
+    # compensar el máximo posible, minimiza los saldos que caducan a los cuatro años.
     anteriores = list(range(ejercicio - normativa.EJERCICIOS_ARRASTRE_SALDOS_NEGATIVOS, ejercicio))
 
     # Paso 1: saldos negativos del ejercicio contra el otro bloque (art. 49.1.a y b).
