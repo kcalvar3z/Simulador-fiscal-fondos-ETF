@@ -30,7 +30,7 @@ AVISO_LEGAL = "Cálculo orientativo con fines divulgativos. No constituye asesor
 PRIVACIDAD = "Tus datos no se guardan: solo existen mientras tienes la página abierta."
 
 TIPO_POR_ETIQUETA = {"Fondo de inversión": TipoProducto.FONDO, "ETF": TipoProducto.ETF}
-VENDER = "Reembolsar o vender"
+REEMBOLSAR = "Reembolsar"
 TRASPASAR = "Traspasar"
 NO_DISPONIBLE = "No disponible"
 
@@ -71,36 +71,40 @@ def formato_euros(importe: Decimal) -> str:
 # --- Entradas -------------------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class DatosProducto:
+    """Lo que el usuario ha rellenado en la tarjeta de un producto, todavía sin validar."""
+
+    nombre: str
+    tipo: TipoProducto
+    operacion: Escenario
+    # Modo sencillo: toda la inversión como un único lote.
+    invertido: float = 0.0
+    fecha_compra: date | None = None
+    valor_hoy: float = 0.0  # valor actual de toda la inversión
+    porcentaje_vendido: int = 100
+    # Modo detallado: una fila por compra y venta por participaciones.
+    lotes: pd.DataFrame | None = None
+    participaciones_vendidas: float = 0.0  # 0 = todas
+    precio_venta: float = 0.0
+    comision_venta: float = 0.0
+
+
 def fecha_venta_por_defecto() -> date:
     hoy = date.today()
     return hoy if hoy.year == normativa.EJERCICIO else date(normativa.EJERCICIO, 12, 31)
 
 
-def compras_ejemplo() -> pd.DataFrame:
-    """Caso B: 20.000 € invertidos (1.000 participaciones a 20 €) que hoy valen 30.000 €."""
+def lotes_ejemplo() -> pd.DataFrame:
+    """1.000 participaciones a 20 €: los mismos 20.000 € del ejemplo sencillo."""
     return pd.DataFrame(
         {
-            "producto": ["Fondo A"],
             "fecha": [date(2023, 1, 15)],
             "participaciones": [1000.0],
             "precio_unitario": [20.0],
             "comision": [0.0],
         }
     )
-
-
-def ventas_ejemplo() -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "producto": ["Fondo A"],
-            "tipo": ["Fondo de inversión"],
-            "operacion": [VENDER],
-            "fecha": [fecha_venta_por_defecto()],
-            "participaciones": [None],
-            "precio_unitario": [30.0],
-            "comision": [0.0],
-        }
-    ).astype({"participaciones": "float64"})
 
 
 def pendientes_vacios() -> pd.DataFrame:
@@ -115,56 +119,18 @@ def pendientes_vacios() -> pd.DataFrame:
     )
 
 
-def _texto(valor) -> str:
-    return str(valor).strip() if pd.notna(valor) else ""
-
-
-def leer_plan(compras: pd.DataFrame, ventas: pd.DataFrame) -> tuple[list[Posicion], dict[str, Escenario]]:
-    """Convierte las dos tablas en posiciones y en la operación elegida para cada una.
-
-    Ignora las filas a medio rellenar. Las compras de productos que no se venden no intervienen.
-    """
-    lotes: dict[str, list[Lote]] = {}
-    for fila in compras.dropna(subset=["fecha", "participaciones", "precio_unitario"]).itertuples():
-        nombre = _texto(fila.producto)
-        if not nombre:
-            raise ValueError("Hay una compra sin producto: indica a qué fondo o ETF pertenece.")
-        lotes.setdefault(nombre, []).append(
-            Lote(
-                fecha=pd.Timestamp(fila.fecha).date(),
-                participaciones=a_decimal(fila.participaciones),
-                precio_unitario=a_decimal(fila.precio_unitario),
-                comision=a_decimal(fila.comision) if pd.notna(fila.comision) else Decimal("0"),
-            )
-        )
-
-    posiciones: list[Posicion] = []
-    operaciones: dict[str, Escenario] = {}
-    for fila in ventas.dropna(subset=["tipo", "operacion", "fecha", "precio_unitario"]).itertuples():
-        nombre = _texto(fila.producto)
-        if nombre not in lotes:
-            raise ValueError(f"«{nombre}» no tiene compras: el nombre debe coincidir con el de la tabla de compras.")
-        tipo = TIPO_POR_ETIQUETA[fila.tipo]
-        vendidas = (
-            sum((lote.participaciones for lote in lotes[nombre]), Decimal("0"))
-            if pd.isna(fila.participaciones)
-            else a_decimal(fila.participaciones)
-        )
-        venta = Venta(
+def leer_lotes(tabla: pd.DataFrame) -> list[Lote]:
+    """Convierte las filas completas de la tabla en lotes; ignora las filas a medio rellenar."""
+    completas = tabla.dropna(subset=["fecha", "participaciones", "precio_unitario"])
+    return [
+        Lote(
             fecha=pd.Timestamp(fila.fecha).date(),
-            participaciones=vendidas,
+            participaciones=a_decimal(fila.participaciones),
             precio_unitario=a_decimal(fila.precio_unitario),
             comision=a_decimal(fila.comision) if pd.notna(fila.comision) else Decimal("0"),
         )
-        posiciones.append(Posicion(nombre, tipo, tuple(lotes[nombre]), venta))
-        if fila.operacion == TRASPASAR:
-            operaciones[nombre] = Escenario.TRASPASO_FONDO  # con un ETF, simular_plan explica que no se puede
-        else:
-            operaciones[nombre] = Escenario.REEMBOLSO_FONDO if tipo is TipoProducto.FONDO else Escenario.VENTA_ETF
-
-    if not posiciones:
-        raise ValueError("Indica en la tabla de ventas al menos un producto con su precio de venta.")
-    return posiciones, operaciones
+        for fila in completas.itertuples()
+    ]
 
 
 def leer_pendientes(tabla: pd.DataFrame, columna: str) -> tuple[SaldoPendiente, ...]:
@@ -173,6 +139,31 @@ def leer_pendientes(tabla: pd.DataFrame, columna: str) -> tuple[SaldoPendiente, 
         for fila in tabla.itertuples()
         if pd.notna(getattr(fila, columna)) and getattr(fila, columna) > 0
     )
+
+
+def construir_posicion(datos: DatosProducto, fecha_venta: date) -> Posicion:
+    nombre = datos.nombre.strip()
+    if not nombre:
+        raise ValueError("Pon un nombre a cada inversión.")
+
+    if datos.lotes is None:
+        # Modo sencillo: un único lote de una unidad que cuesta lo invertido. Vender un porcentaje es
+        # vender esa fracción de la unidad, así que el coste se imputa en la misma proporción.
+        if datos.fecha_compra is None:
+            raise ValueError(f"Indica cuándo invertiste en «{nombre}».")
+        lotes = (Lote(datos.fecha_compra, Decimal("1"), a_decimal(datos.invertido)),)
+        venta = Venta(fecha_venta, Decimal(datos.porcentaje_vendido) / 100, a_decimal(datos.valor_hoy))
+    else:
+        lotes = tuple(leer_lotes(datos.lotes))
+        if not lotes:
+            raise ValueError(f"«{nombre}» no tiene ninguna compra completa.")
+        vendidas = (
+            a_decimal(datos.participaciones_vendidas)
+            if datos.participaciones_vendidas
+            else sum((lote.participaciones for lote in lotes), Decimal("0"))
+        )
+        venta = Venta(fecha_venta, vendidas, a_decimal(datos.precio_venta), a_decimal(datos.comision_venta))
+    return Posicion(nombre, datos.tipo, lotes, venta)
 
 
 # --- Planes que se muestran -----------------------------------------------------------------------
@@ -281,7 +272,9 @@ def mensaje_clave(posiciones: list[Posicion], planes: list[PlanMostrado]) -> str
         )
     t = por_clave["traspasar"].resultado
     linea_traspaso = (
-        f"- **{por_clave['traspasar'].titulo}:** los fondos no tributan ahora; la ganancia se difiere. "
+        f"- **{por_clave['traspasar'].titulo}:** "
+        + ("no tributas ahora" if len(posiciones) == 1 else "los fondos no tributan ahora")
+        + "; la ganancia se difiere. "
         f"El impuesto latente ({formato_euros(t.impuesto_latente)}, calculado como si reembolsaras hoy) aflora "
         "cuando reembolses, porque las nuevas participaciones conservan el valor y la fecha de compra originales."
     )
@@ -358,13 +351,41 @@ def tabla_saldos_pendientes(planes: list[PlanMostrado]) -> pd.DataFrame | None:
     )
 
 
+def paso(etiqueta: str, titulo: str) -> None:
+    st.markdown(f'<div class="etiqueta">{etiqueta}</div>', unsafe_allow_html=True)
+    st.subheader(titulo)
+
+
+def mostrar_tarjetas(planes: list[PlanMostrado]) -> None:
+    """Una tarjeta por plan con la cuota en grande y el resto de cifras debajo."""
+    for columna, plan in zip(st.columns(len(planes)), planes):
+        with columna.container(border=True):
+            st.markdown(f'<div class="etiqueta">{plan.titulo}</div>', unsafe_allow_html=True)
+            r = plan.resultado
+            if r is None:
+                st.metric(f"Cuota de IRPF en {normativa.EJERCICIO}", NO_DISPONIBLE)
+                st.caption("Un ETF no se puede traspasar: venderlo siempre tributa en el ejercicio (art. 94 LIRPF).")
+                continue
+            st.metric(f"Cuota de IRPF en {normativa.EJERCICIO}", formato_euros(r.cuota))
+            filas = [
+                ("Retención al vender", r.retencion),
+                ("Efecto en la Renta", r.regularizacion_renta),
+                ("Impuesto latente", r.impuesto_latente),
+            ]
+            html = "".join(
+                f'<div class="fila"><span>{concepto}</span><span class="cifra">{formato_euros(importe)}</span></div>'
+                for concepto, importe in filas
+            )
+            st.markdown(f'<div class="cifras">{html}</div>', unsafe_allow_html=True)
+
+
 def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -> None:
-    st.subheader("Resultado")
-    st.dataframe(tabla_comparativa(planes), width="stretch")
+    paso("03 · Resultado", "Lo que pagas en cada caso")
+    mostrar_tarjetas(planes)
     st.markdown(mensaje_clave(posiciones, planes))
 
     if len(posiciones) > 1:
-        st.markdown("**Por producto**")
+        st.markdown("**Por inversión**")
         st.dataframe(tabla_por_producto(posiciones, planes), width="stretch")
 
     saldos = tabla_saldos_pendientes(planes)
@@ -375,9 +396,11 @@ def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -
     for texto in textos_avisos(planes):
         st.warning(texto)
 
-    with st.expander("Cómo leer la tabla"):
+    with st.expander("Ver la tabla completa"):
+        st.dataframe(tabla_comparativa(planes), width="stretch")
+    with st.expander("Cómo leer el resultado"):
         st.markdown(
-            "- **Cuota**: lo que las operaciones añaden a tu IRPF del año (negativa si una pérdida lo reduce).\n"
+            "- **Cuota**: lo que la operación añade a tu IRPF del año (negativa si una pérdida lo reduce).\n"
             "- **Retención**: lo que la gestora ingresa a Hacienda al reembolsar. Es un adelanto, no un "
             "impuesto adicional.\n"
             "- **Efecto en la Renta**: cuota menos retención. Positivo: lo que te queda por pagar en la "
@@ -393,78 +416,194 @@ def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -
 
 # --- Página ---------------------------------------------------------------------------------------
 
+ESTILOS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+.cabecera {
+    border-top: 4px solid;
+    border-image: linear-gradient(90deg, #ca7c18 0%, #f5aa20 50%, #ffc51e 75%, #ffcc1d 100%) 1;
+    padding: 1.5rem 0 0.75rem;
+}
+.cabecera h1 { color: #ffffff; font-size: 2.4rem; margin: 0.35rem 0 0.25rem; padding: 0; }
+.cabecera p { color: #a0a0a8; margin: 0; }
+.etiqueta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #f5aa20;
+}
+h2, h3, h4 { color: #ffffff; }
+[data-testid="stMetricValue"] { font-family: 'IBM Plex Mono', monospace; color: #f5aa20; }
+.cifras .fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-top: 1px solid #2d2d32;
+}
+.cifras .cifra { font-family: 'IBM Plex Mono', monospace; color: #e8e8ed; white-space: nowrap; }
+</style>
+"""
+
+CABECERA = f"""
+<div class="cabecera">
+  <div class="etiqueta">IRPF {normativa.EJERCICIO} · Territorio común · Simulador divulgativo</div>
+  <h1>Vender un fondo o un ETF: qué pagas en el IRPF</h1>
+  <p>Introduce tus inversiones y compara reembolsar, traspasar o vender. {PRIVACIDAD}</p>
+</div>
+"""
+
+
+def _ids_productos() -> list[int]:
+    if "productos" not in st.session_state:
+        st.session_state.productos = [0]
+        st.session_state.siguiente_producto = 1
+    return st.session_state.productos
+
+
+def _anadir_producto() -> None:
+    st.session_state.productos.append(st.session_state.siguiente_producto)
+    st.session_state.siguiente_producto += 1
+
+
+def _quitar_producto(id_producto: int) -> None:
+    st.session_state.productos.remove(id_producto)
+
+
+def tarjeta_producto(id_producto: int, numero: int, varios: bool) -> DatosProducto:
+    """Tarjeta con las preguntas de un producto. Las claves de los widgets llevan su id."""
+    primero = id_producto == 0
+    clave = lambda campo: f"{campo}_{id_producto}"  # noqa: E731
+
+    with st.container(border=True):
+        izquierda, derecha = st.columns([4, 1], vertical_alignment="bottom")
+        nombre = izquierda.text_input(
+            "Nombre", value="Mi inversión" if primero else f"Inversión {numero}", key=clave("nombre")
+        )
+        if varios:
+            derecha.button("Quitar", key=clave("quitar"), on_click=_quitar_producto, args=(id_producto,))
+        tipo = TIPO_POR_ETIQUETA[
+            st.radio("¿Qué es?", list(TIPO_POR_ETIQUETA), horizontal=True, key=clave("tipo"))
+        ]
+
+        if st.toggle("Tengo varias compras en fechas distintas", key=clave("detallado")):
+            st.caption("Una fila por compra. Si vendes solo una parte, se venden primero las más antiguas.")
+            datos_venta = dict(
+                lotes=st.data_editor(
+                    lotes_ejemplo(),
+                    key=clave("lotes"),
+                    num_rows="dynamic",
+                    hide_index=True,
+                    column_config={
+                        "fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY", required=True),
+                        "participaciones": st.column_config.NumberColumn("Participaciones", min_value=0, format="%.4f"),
+                        "precio_unitario": st.column_config.NumberColumn("Precio (€)", min_value=0, format="%.4f"),
+                        "comision": st.column_config.NumberColumn(
+                            "Comisión (€)", min_value=0, format="%.2f", default=0.0
+                        ),
+                    },
+                )
+            )
+            c1, c2, c3 = st.columns(3)
+            datos_venta["participaciones_vendidas"] = c1.number_input(
+                "Participaciones que vendes",
+                min_value=0.0,
+                value=0.0,
+                step=1.0,
+                format="%.4f",
+                help="Déjalo en 0 para venderlas todas.",
+                key=clave("participaciones"),
+            )
+            datos_venta["precio_venta"] = c2.number_input(
+                "Precio de venta hoy (€)", min_value=0.0, value=30.0, format="%.4f", key=clave("precio")
+            )
+            datos_venta["comision_venta"] = c3.number_input(
+                "Comisión de venta (€)", min_value=0.0, value=0.0, format="%.2f", key=clave("comision")
+            )
+        else:
+            c1, c2 = st.columns(2)
+            datos_venta = dict(
+                invertido=c1.number_input(
+                    "Cuánto invertiste (€)",
+                    min_value=0.0,
+                    value=20000.0 if primero else 10000.0,
+                    step=500.0,
+                    format="%.0f",
+                    key=clave("invertido"),
+                ),
+                valor_hoy=c2.number_input(
+                    "Cuánto vale hoy (€)",
+                    min_value=0.0,
+                    value=30000.0 if primero else 10000.0,
+                    step=500.0,
+                    format="%.0f",
+                    key=clave("valor_hoy"),
+                ),
+                fecha_compra=c1.date_input(
+                    "Cuándo invertiste",
+                    value=date(2023, 1, 15),
+                    min_value=date(1990, 1, 1),
+                    max_value=date(normativa.EJERCICIO, 12, 31),
+                    format="DD/MM/YYYY",
+                    key=clave("fecha_compra"),
+                ),
+                porcentaje_vendido=c2.slider(
+                    "Qué parte vendes", min_value=1, max_value=100, value=100, format="%d %%", key=clave("porcentaje")
+                ),
+            )
+
+        if tipo is TipoProducto.ETF:
+            operacion = Escenario.VENTA_ETF
+            if varios:
+                st.caption("Un ETF no admite traspaso: se vende y tributa este año.")
+        elif varios:
+            elegida = st.radio("¿Qué harías con él?", [REEMBOLSAR, TRASPASAR], horizontal=True, key=clave("operacion"))
+            operacion = Escenario.TRASPASO_FONDO if elegida == TRASPASAR else Escenario.REEMBOLSO_FONDO
+        else:
+            operacion = Escenario.REEMBOLSO_FONDO  # con un solo producto se muestran las dos opciones
+
+    return DatosProducto(nombre=nombre, tipo=tipo, operacion=operacion, **datos_venta)
+
 
 def main() -> None:
     st.set_page_config(page_title="Simulador fiscal: fondo vs. ETF", layout="wide")
-    st.title("Vender un fondo o un ETF: qué cuesta en el IRPF")
-    st.caption(f"IRPF, territorio común, ejercicio {normativa.EJERCICIO}. {PRIVACIDAD}")
+    st.markdown(ESTILOS, unsafe_allow_html=True)
+    st.markdown(CABECERA, unsafe_allow_html=True)
     st.info(AVISO_LEGAL)
 
-    entrada, salida = st.columns([5, 4], gap="large")
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        paso("01", "Tus inversiones")
+        ids = _ids_productos()
+        datos = [tarjeta_producto(id_producto, n, len(ids) > 1) for n, id_producto in enumerate(ids, start=1)]
+        st.button("+ Añadir otro fondo o ETF", key="anadir", on_click=_anadir_producto)
 
-    with entrada:
-        st.subheader("1. Tus compras")
-        st.caption(
-            "Una fila por compra. Se venden primero las más antiguas de cada producto. Cada clase de un fondo "
-            "es un producto distinto."
+    with derecha:
+        paso("02 · Opcional", f"Tu situación en {normativa.EJERCICIO}")
+        st.caption("Si no lo sabes, déjalo como está: el cálculo supone que no tienes otras rentas del ahorro.")
+        fecha_venta = st.date_input(
+            "Fecha de la venta",
+            value=fecha_venta_por_defecto(),
+            min_value=date(normativa.EJERCICIO, 1, 1),
+            max_value=date(normativa.EJERCICIO, 12, 31),
+            format="DD/MM/YYYY",
         )
-        tabla_compras = st.data_editor(
-            compras_ejemplo(),
-            key="compras",
-            num_rows="dynamic",
-            hide_index=True,
-            column_config={
-                "producto": st.column_config.TextColumn("Producto", required=True),
-                "fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY", required=True),
-                "participaciones": st.column_config.NumberColumn("Participaciones", min_value=0, format="%.4f"),
-                "precio_unitario": st.column_config.NumberColumn("Precio (€)", min_value=0, format="%.4f"),
-                "comision": st.column_config.NumberColumn("Comisión (€)", min_value=0, format="%.2f", default=0.0),
-            },
-        )
-
-        st.subheader("2. Qué haces con cada producto")
-        st.caption(
-            "Una fila por producto que vendes o traspasas, con el mismo nombre que en las compras. "
-            "Deja «Participaciones» vacío para venderlas todas."
-        )
-        tabla_ventas = st.data_editor(
-            ventas_ejemplo(),
-            key="ventas",
-            num_rows="dynamic",
-            hide_index=True,
-            column_config={
-                "producto": st.column_config.TextColumn("Producto", required=True),
-                "tipo": st.column_config.SelectboxColumn(
-                    "Tipo", options=list(TIPO_POR_ETIQUETA), required=True, default="Fondo de inversión"
-                ),
-                "operacion": st.column_config.SelectboxColumn(
-                    "Operación", options=[VENDER, TRASPASAR], required=True, default=VENDER
-                ),
-                "fecha": st.column_config.DateColumn(
-                    "Fecha",
-                    format="DD/MM/YYYY",
-                    min_value=date(normativa.EJERCICIO, 1, 1),
-                    max_value=date(normativa.EJERCICIO, 12, 31),
-                    default=fecha_venta_por_defecto(),
-                    required=True,
-                ),
-                "participaciones": st.column_config.NumberColumn("Participaciones", min_value=0, format="%.4f"),
-                "precio_unitario": st.column_config.NumberColumn("Precio de venta (€)", min_value=0, format="%.4f"),
-                "comision": st.column_config.NumberColumn("Comisión (€)", min_value=0, format="%.2f", default=0.0),
-            },
-        )
-
-        st.subheader(f"3. Tus otras rentas del ahorro en {normativa.EJERCICIO}")
         rendimientos = st.number_input(
-            "Saldo de rendimientos del capital mobiliario (intereses, dividendos…), €",
+            "Intereses y dividendos del año (€)",
             value=0.0,
             step=100.0,
-            format="%.2f",
+            format="%.0f",
+            help="Saldo de rendimientos del capital mobiliario. Si es negativo, ponlo con signo menos.",
         )
         otras_ganancias = st.number_input(
-            "Saldo de otras ganancias y pérdidas patrimoniales, €", value=0.0, step=100.0, format="%.2f"
+            "Otras ganancias o pérdidas por ventas del año (€)",
+            value=0.0,
+            step=100.0,
+            format="%.0f",
+            help="Saldo de otras ganancias y pérdidas patrimoniales. Las pérdidas, con signo menos.",
         )
-        with st.expander("Saldos negativos pendientes de años anteriores"):
+        with st.expander("Pérdidas pendientes de años anteriores"):
             tabla_pendientes = st.data_editor(
                 pendientes_vacios(),
                 key="pendientes",
@@ -480,20 +619,21 @@ def main() -> None:
                 },
             )
 
-    with salida:
-        try:
-            posiciones, operaciones = leer_plan(tabla_compras, tabla_ventas)
-            otras_rentas = OtrasRentasAhorro(
-                saldo_rendimientos=a_decimal(rendimientos),
-                saldo_ganancias_perdidas=a_decimal(otras_ganancias),
-                rendimientos_negativos_anteriores=leer_pendientes(tabla_pendientes, "rendimientos"),
-                perdidas_patrimoniales_anteriores=leer_pendientes(tabla_pendientes, "perdidas"),
-            )
-            planes = calcular_planes(posiciones, operaciones, otras_rentas)
-        except ValueError as error:
-            st.error(str(error))
-        else:
-            mostrar_resultados(posiciones, planes)
+    st.divider()
+    try:
+        posiciones = [construir_posicion(d, fecha_venta) for d in datos]
+        operaciones = {posicion.nombre: d.operacion for posicion, d in zip(posiciones, datos)}
+        otras_rentas = OtrasRentasAhorro(
+            saldo_rendimientos=a_decimal(rendimientos),
+            saldo_ganancias_perdidas=a_decimal(otras_ganancias),
+            rendimientos_negativos_anteriores=leer_pendientes(tabla_pendientes, "rendimientos"),
+            perdidas_patrimoniales_anteriores=leer_pendientes(tabla_pendientes, "perdidas"),
+        )
+        planes = calcular_planes(posiciones, operaciones, otras_rentas)
+    except ValueError as error:
+        st.error(str(error))
+    else:
+        mostrar_resultados(posiciones, planes)
 
     st.divider()
     st.caption(AVISO_LEGAL)

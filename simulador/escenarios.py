@@ -213,7 +213,7 @@ def _validar_plan(posiciones: Sequence[Posicion], operaciones: Mapping[str, Esce
         raise ValueError("No hay ninguna posición que simular.")
     nombres = [posicion.nombre for posicion in posiciones]
     if len(nombres) != len(set(nombres)):
-        raise ValueError("Hay dos posiciones con el mismo nombre.")
+        raise ValueError("Hay dos inversiones con el mismo nombre.")
     for posicion in posiciones:
         if posicion.nombre not in operaciones:
             raise ValueError(f"Falta indicar qué se hace con «{posicion.nombre}».")

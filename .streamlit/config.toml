@@ -1,31 +1,43 @@
-# Tema de la app: neutros sobre blanco, azul de acento y bordes grises suaves.
+# Tema de la app: estética de terminal financiera. Fondo casi negro, ámbar como color
+# principal, cian de acento y cifras en tipografía monoespaciada.
 
 [theme]
-base = "light"
-primaryColor = "#0062dd"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f4f4f9"
-textColor = "#2d2d32"
-linkColor = "#0062dd"
-grayTextColor = "#616166"
-borderColor = "#c8c8cd"
+base = "dark"
+primaryColor = "#f5aa20"
+backgroundColor = "#0a0a0a"
+secondaryBackgroundColor = "#16161a"
+textColor = "#e8e8ed"
+linkColor = "#66abff"
+grayTextColor = "#a0a0a8"
+borderColor = "#2d2d32"
 showWidgetBorder = true
 baseRadius = "4px"
 
-# Avisos: azul claro para la información y ámbar para las advertencias.
-blueBackgroundColor = "#e6f3ff"
+# Avisos: azul oscuro para la información y ámbar para las advertencias.
+blueColor = "#0062dd"
+blueBackgroundColor = "#0b1a2e"
+blueTextColor = "#cfe6ff"
 yellowColor = "#f5aa20"
-yellowTextColor = "#2d2d32"
+yellowBackgroundColor = "#2a1d05"
+yellowTextColor = "#ffd27a"
 
 # Tablas.
-dataframeBorderColor = "#c8c8cd"
-dataframeHeaderBackgroundColor = "#f4f4f9"
-dataframeHeaderTextColor = "#000000"
+dataframeBorderColor = "#2d2d32"
+dataframeHeaderBackgroundColor = "#16161a"
+dataframeHeaderTextColor = "#f5aa20"
 
-# Tipografía libre (Google Fonts) con alternativas del sistema.
-font = "'Nunito Sans':https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap, Helvetica, Arial, sans-serif"
-headingFontWeights = 700
+# Tipografías libres (Google Fonts) con alternativas del sistema.
+font = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
+codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap, monospace"
+headingFontWeights = 600
+
+# Colores para los gráficos: ámbar, cian y azul.
+chartCategoricalColors = ["#f5aa20", "#00bcd4", "#0062dd", "#ffcc1d", "#a0a0a8"]
 
 [browser]
 # Sin estadísticas de uso de Streamlit: coherente con el aviso de privacidad de la app.
 gatherUsageStats = false
+
+[client]
+# Oculta el botón «Deploy» y deja solo el menú mínimo.
+toolbarMode = "minimal"
