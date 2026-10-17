@@ -46,11 +46,11 @@ def test_app_muestra_el_caso_b_por_defecto():
     app = ejecutar_app()
     tabla = tabla_resultados(app)
 
-    reembolso = tabla["Reembolso del fondo (tu caso)"]
+    # Con un fondo solo se muestran sus dos escenarios.
+    assert list(tabla.columns) == ["Reembolso del fondo", "Traspaso a otro fondo"]
+    reembolso = tabla["Reembolso del fondo"]
     assert (reembolso[CUOTA], reembolso[RETENCION], reembolso[EFECTO_RENTA]) == ("1.980,00 €", "1.900,00 €", "80,00 €")
-    assert tabla["Traspaso a otro fondo (tu caso)"][LATENTE] == "1.980,00 €"
-    etf = tabla["Venta del ETF (si fuera un ETF)"]
-    assert (etf[CUOTA], etf[RETENCION]) == ("1.980,00 €", "0,00 €")
+    assert tabla["Traspaso a otro fondo"][LATENTE] == "1.980,00 €"
     assert any(AVISO_LEGAL in aviso.value for aviso in app.info)
 
 
@@ -60,5 +60,7 @@ def test_app_con_etf_marca_el_traspaso_como_no_disponible():
     assert not app.exception
     tabla = tabla_resultados(app)
 
+    assert list(tabla.columns) == ["Venta del ETF", "Traspaso a otro fondo"]
+    etf = tabla["Venta del ETF"]
+    assert (etf[CUOTA], etf[RETENCION]) == ("1.980,00 €", "0,00 €")
     assert (tabla["Traspaso a otro fondo"] == "No disponible").all()
-    assert tabla["Venta del ETF (tu caso)"][CUOTA] == "1.980,00 €"

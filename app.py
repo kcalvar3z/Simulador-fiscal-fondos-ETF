@@ -122,17 +122,14 @@ def fecha_venta_por_defecto() -> date:
 # --- Resultados -----------------------------------------------------------------------------------
 
 
-def titulo_columna(escenario: Escenario, tipo: TipoProducto) -> str:
-    nombre = NOMBRE_ESCENARIO[escenario]
-    if escenario in escenarios_disponibles(tipo):
-        return f"{nombre} (tu caso)"
-    if tipo is TipoProducto.ETF and escenario is Escenario.TRASPASO_FONDO:
-        return nombre
-    otro = "un ETF" if tipo is TipoProducto.FONDO else "un fondo"
-    return f"{nombre} (si fuera {otro})"
+def escenarios_a_mostrar(tipo: TipoProducto) -> tuple[Escenario, ...]:
+    """Los escenarios del producto elegido. Con un ETF se añade el traspaso, marcado como no disponible."""
+    if tipo is TipoProducto.ETF:
+        return (*escenarios_disponibles(tipo), Escenario.TRASPASO_FONDO)
+    return escenarios_disponibles(tipo)
 
 
-def tabla_comparativa(tipo: TipoProducto, resultados: tuple[ResultadoEscenario, ...]) -> pd.DataFrame:
+def tabla_comparativa(tipo: TipoProducto, resultados: dict[Escenario, ResultadoEscenario]) -> pd.DataFrame:
     conceptos = [
         f"Cuota de IRPF en {normativa.EJERCICIO}",
         "Retención al vender (pago a cuenta)",
@@ -140,44 +137,40 @@ def tabla_comparativa(tipo: TipoProducto, resultados: tuple[ResultadoEscenario, 
         "Impuesto latente (diferido)",
     ]
     columnas = {}
-    for resultado in resultados:
-        if tipo is TipoProducto.ETF and resultado.escenario is Escenario.TRASPASO_FONDO:
+    for escenario in escenarios_a_mostrar(tipo):
+        if escenario not in escenarios_disponibles(tipo):
             valores = [NO_DISPONIBLE] * len(conceptos)
         else:
+            resultado = resultados[escenario]
             valores = [
                 formato_euros(resultado.cuota),
                 formato_euros(resultado.retencion),
                 formato_euros(resultado.regularizacion_renta),
                 formato_euros(resultado.impuesto_latente),
             ]
-        columnas[titulo_columna(resultado.escenario, tipo)] = valores
+        columnas[NOMBRE_ESCENARIO[escenario]] = valores
     return pd.DataFrame(columnas, index=conceptos)
 
 
 def mensaje_clave(tipo: TipoProducto, resultados: dict[Escenario, ResultadoEscenario]) -> str:
+    if tipo is TipoProducto.ETF:
+        etf = resultados[Escenario.VENTA_ETF]
+        return (
+            f"- **Venta del ETF:** la cuota ({formato_euros(etf.cuota)}) se paga en la Renta del ejercicio. "
+            "No hay retención al vender, así que no adelantas nada: lo pagas entero en la declaración.\n"
+            "- **Un ETF no admite traspaso:** vender siempre tributa en el ejercicio (art. 94 LIRPF)."
+        )
     reembolso = resultados[Escenario.REEMBOLSO_FONDO]
     traspaso = resultados[Escenario.TRASPASO_FONDO]
-    etf = resultados[Escenario.VENTA_ETF]
     lineas = [
-        f"- **Reembolso del fondo y venta del ETF pagan la misma cuota ({formato_euros(reembolso.cuota)}).** "
-        f"Solo cambia cuándo: el fondo retiene {formato_euros(reembolso.retencion)} al reembolsar y el resto "
-        f"se ajusta en la Renta; el ETF no retiene y lo pagas entero en la declaración.",
+        f"- **Reembolso del fondo:** la cuota es {formato_euros(reembolso.cuota)}. La gestora retiene "
+        f"{formato_euros(reembolso.retencion)} al reembolsar y la diferencia se ajusta en la Renta.",
+        f"- **Traspaso a otro fondo:** no tributas ahora; la ganancia se difiere. El impuesto latente "
+        f"({formato_euros(traspaso.impuesto_latente)}, calculado como si reembolsaras hoy) aflora cuando "
+        "reembolses, porque las nuevas participaciones conservan el valor y la fecha de compra originales.",
     ]
-    if tipo is TipoProducto.FONDO:
-        lineas.append(
-            f"- **Con el traspaso no tributas ahora:** la ganancia se difiere. El impuesto latente "
-            f"({formato_euros(traspaso.impuesto_latente)}, calculado como si reembolsaras hoy) aflora cuando "
-            f"reembolses, porque las nuevas participaciones conservan el valor y la fecha de compra originales."
-        )
-    else:
-        lineas.append(
-            "- **Un ETF no admite traspaso:** vender siempre tributa en el ejercicio (art. 94 LIRPF). "
-            f"Si fuera un fondo, podrías diferir {formato_euros(traspaso.impuesto_latente)} con un traspaso."
-        )
-    if etf.cuota != 0:
-        lineas.append(
-            "- Una retención no es un impuesto extra: es un pago a cuenta que se descuenta en la Renta."
-        )
+    if reembolso.retencion != 0:
+        lineas.append("- Una retención no es un impuesto extra: es un pago a cuenta que se descuenta en la Renta.")
     return "\n".join(lineas)
 
 
@@ -208,13 +201,13 @@ def texto_aviso(aviso: Aviso, resultado: ResultadoEscenario) -> str:
     )
 
 
-def tabla_saldos_pendientes(tipo: TipoProducto, resultados: tuple[ResultadoEscenario, ...]) -> pd.DataFrame | None:
+def tabla_saldos_pendientes(
+    tipo: TipoProducto, resultados: dict[Escenario, ResultadoEscenario]
+) -> pd.DataFrame | None:
     columnas = {}
-    for resultado in resultados:
-        if tipo is TipoProducto.ETF and resultado.escenario is Escenario.TRASPASO_FONDO:
-            continue
-        c = resultado.compensacion
-        columnas[titulo_columna(resultado.escenario, tipo)] = [
+    for escenario in escenarios_disponibles(tipo):
+        c = resultados[escenario].compensacion
+        columnas[NOMBRE_ESCENARIO[escenario]] = [
             sum((s.importe for s in c.perdidas_patrimoniales_pendientes), Decimal("0")),
             sum((s.importe for s in c.rendimientos_negativos_pendientes), Decimal("0")),
             c.perdidas_patrimoniales_caducadas + c.rendimientos_negativos_caducados,
@@ -238,10 +231,10 @@ def mostrar_resultados(tipo: TipoProducto, resultados: tuple[ResultadoEscenario,
 
     st.subheader("Resultado")
     st.metric("Ganancia patrimonial" if ganancia >= 0 else "Pérdida patrimonial", formato_euros(abs(ganancia)))
-    st.dataframe(tabla_comparativa(tipo, resultados), width="stretch")
+    st.dataframe(tabla_comparativa(tipo, por_escenario), width="stretch")
     st.markdown(mensaje_clave(tipo, por_escenario))
 
-    saldos = tabla_saldos_pendientes(tipo, resultados)
+    saldos = tabla_saldos_pendientes(tipo, por_escenario)
     if saldos is not None:
         st.markdown("**Saldos negativos tras la operación**")
         st.dataframe(saldos, width="stretch")
