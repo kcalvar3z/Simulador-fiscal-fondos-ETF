@@ -260,11 +260,24 @@ def mensaje_clave(posiciones: list[Posicion], planes: list[PlanMostrado]) -> str
             "- **Un ETF no admite traspaso:** vender siempre tributa en el ejercicio (art. 94 LIRPF)."
         )
 
-    lineas = [
+    lineas = []
+    if "seleccion" in por_clave:
+        s = por_clave["seleccion"].resultado
+        latente = (
+            f"un ahorro latente de {formato_euros(-s.impuesto_latente)}: la pérdida que aplazas reducirá tu "
+            "impuesto cuando reembolses"
+            if s.impuesto_latente < 0
+            else f"un impuesto latente de {formato_euros(s.impuesto_latente)}"
+        )
+        lineas.append(
+            f"- **Tu selección:** pagas {formato_euros(s.cuota)} de cuota este año, con "
+            f"{formato_euros(s.retencion)} de retención, y dejas {latente}."
+        )
+    lineas.append(
         f"- **{reembolsar.titulo}:** la cuota es {formato_euros(r.cuota)}. Al reembolsar se retienen "
         f"{formato_euros(r.retencion)}, que se descuentan en la Renta"
         + (" (los ETF no tienen retención)." if hay_etf else ".")
-    ]
+    )
     if len(posiciones) > 1 and r.retencion > r.cuota and r.retencion > 0:
         lineas.append(
             "- **Las retenciones superan la cuota** porque se calculan fondo a fondo y no descuentan las "
@@ -406,7 +419,8 @@ def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -
             "- **Efecto en la Renta**: cuota menos retención. Positivo: lo que te queda por pagar en la "
             "declaración. Negativo: lo que reduce tu resultado.\n"
             "- **Impuesto latente**: la cuota que el traspaso aplaza, calculada como si reembolsaras hoy. "
-            "La real dependerá del valor y de tus rentas el año en que reembolses.\n"
+            "La real dependerá del valor y de tus rentas el año en que reembolses. Si es negativo, es un ahorro "
+            "futuro: una pérdida que el traspaso aplaza.\n"
             "- **Tu selección** aparece cuando combinas operaciones distintas (por ejemplo, reembolsar un fondo "
             "y traspasar otro)."
         )

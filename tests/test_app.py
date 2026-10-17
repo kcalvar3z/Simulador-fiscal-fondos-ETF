@@ -145,6 +145,9 @@ def test_app_caso_i_añadiendo_un_segundo_fondo():
     tabla = tabla_resultados(app)
     assert list(tabla.columns)[0] == "Tu selección"
     assert (tabla["Tu selección"][CUOTA], tabla["Tu selección"][LATENTE]) == ("1.980,00 €", "-840,00 €")
+    resumen = next(m.value for m in app.markdown if "**Tu selección:**" in m.value)
+    assert "pagas 1.980,00 € de cuota este año" in resumen
+    assert "ahorro latente de 840,00 €" in resumen
 
 
 def test_app_quitar_el_segundo_fondo_vuelve_a_un_solo_producto():
