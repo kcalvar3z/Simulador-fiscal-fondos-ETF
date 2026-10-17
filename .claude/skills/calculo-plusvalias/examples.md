@@ -70,3 +70,17 @@ Manual práctico de Renta 2025, cap. 12, con los ejercicios desplazados un año 
 - Pérdidas patrimoniales pendientes de 2022: 5.000 € (2026 es el último año para compensarlas). Inversión de 20.000 € que hoy vale 21.000 €: ganancia de 1.000 €.
 - Reembolso: la ganancia se compensa con la pérdida de 2022 → cuota **0**. El fondo retiene 190,00 (19 % de 1.000), que se devuelven en la Renta. Caducan 4.000 €.
 - Traspaso: no hay ganancia que compensar → caducan los 5.000 € e impuesto latente 0 (si se reembolsara hoy, la ganancia quedaría cubierta por esas pérdidas).
+
+## Caso I – Dos fondos: uno gana y otro pierde
+
+- Fondo A: 20.000 € que hoy valen 30.000 € (ganancia 10.000 €). Fondo B: 20.000 € que hoy valen 16.000 € (pérdida 4.000 €). Sin otras rentas.
+- La cuota se calcula sobre la base conjunta; la retención, fondo a fondo (art. 97.1 RIRPF).
+
+| Plan | Cuota hoy | Retención | Efecto en la Renta | Impuesto latente |
+|---|---|---|---|---|
+| Reembolsar los dos | 6.000 × 19 % = 1.140,00 | 1.900,00 (solo A) | −760,00 | 0 |
+| Traspasar los dos | 0 | 0 | 0 | 1.140,00 |
+| Reembolsar A, traspasar B | 1.140 + 840 = 1.980,00 | 1.900,00 | 80,00 | 1.140 − 1.980 = −840,00 |
+| Traspasar A, reembolsar B | 0 (quedan 4.000 € de pérdida pendiente) | 0 | 0 | 1.140,00 |
+
+En el primer plan la retención supera la cuota porque no descuenta la pérdida de B: la diferencia se devuelve en la Renta.

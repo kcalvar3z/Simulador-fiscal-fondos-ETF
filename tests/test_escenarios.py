@@ -8,9 +8,13 @@ from simulador.escenarios import (
     Aviso,
     Escenario,
     OtrasRentasAhorro,
+    Posicion,
     calcular_escenario,
     comparar_escenarios,
     escenarios_disponibles,
+    operaciones_reembolsar_todo,
+    operaciones_traspasar_fondos,
+    simular_plan,
 )
 from simulador.lotes import Lote, TipoProducto, Venta
 
@@ -125,3 +129,95 @@ def test_venta_fuera_del_ejercicio_2026_da_error():
     venta = Venta(date(2025, 12, 31), D("10"), D("30"))
     with pytest.raises(ValueError, match="2026"):
         calcular_escenario(Escenario.VENTA_ETF, lotes, venta)
+
+
+# Planes con varias posiciones
+
+
+def posicion(nombre: str, tipo: TipoProducto, coste_unitario: str, precio_venta: str) -> Posicion:
+    lotes, venta = inversion(coste_unitario, precio_venta)
+    return Posicion(nombre, tipo, tuple(lotes), venta)
+
+
+def caso_i() -> list[Posicion]:
+    # Fondo A: 20.000 → 30.000 (gana 10.000). Fondo B: 20.000 → 16.000 (pierde 4.000).
+    return [posicion("Fondo A", TipoProducto.FONDO, "20", "30"), posicion("Fondo B", TipoProducto.FONDO, "20", "16")]
+
+
+def test_caso_i_reembolsar_todo_la_retencion_es_fondo_a_fondo():
+    # Base: 10.000 − 4.000 = 6.000 → cuota 1.140. Retención solo de A: 19 % × 10.000 = 1.900.
+    # La retención no descuenta la pérdida de B: en la Renta se devuelven 760.
+    posiciones = caso_i()
+    plan = simular_plan(posiciones, operaciones_reembolsar_todo(posiciones))
+
+    assert (plan.cuota, plan.retencion, plan.regularizacion_renta, plan.impuesto_latente) == (
+        D("1140"),
+        D("1900"),
+        D("-760"),
+        D("0"),
+    )
+    assert [p.retencion for p in plan.posiciones] == [D("1900"), D("0")]
+    assert plan.posiciones[1].avisos == (Aviso.REGLA_RECOMPRA,)
+
+
+def test_caso_i_traspasar_todo_difiere_la_cuota_conjunta():
+    posiciones = caso_i()
+    plan = simular_plan(posiciones, operaciones_traspasar_fondos(posiciones))
+
+    assert (plan.cuota, plan.retencion, plan.impuesto_latente) == (D("0"), D("0"), D("1140"))
+
+
+def test_caso_i_reembolsar_el_que_gana_y_traspasar_el_que_pierde():
+    # Hoy tributa A sola: 6.000 × 19 % + 4.000 × 21 % = 1.980.
+    # Latente: cuota si se reembolsara todo (1.140) − cuota de hoy (1.980) = −840: la pérdida diferida
+    # de B es un ahorro futuro.
+    plan = simular_plan(
+        caso_i(), {"Fondo A": Escenario.REEMBOLSO_FONDO, "Fondo B": Escenario.TRASPASO_FONDO}
+    )
+
+    assert (plan.cuota, plan.retencion, plan.impuesto_latente) == (D("1980"), D("1900"), D("-840"))
+
+
+def test_caso_i_reembolsar_el_que_pierde_y_traspasar_el_que_gana():
+    # Hoy solo se computa la pérdida de B: base 0, cuota 0, y 4.000 € quedan pendientes.
+    plan = simular_plan(
+        caso_i(), {"Fondo A": Escenario.TRASPASO_FONDO, "Fondo B": Escenario.REEMBOLSO_FONDO}
+    )
+
+    assert (plan.cuota, plan.retencion, plan.impuesto_latente) == (D("0"), D("0"), D("1140"))
+    assert plan.compensacion.perdidas_patrimoniales_pendientes == (SaldoPendiente(2026, D("4000")),)
+
+
+def test_traspasar_los_fondos_vende_igualmente_los_etf():
+    # ETF: gana 5.000 y se vende → cuota 950, sin retención. Fondo: gana 5.000 y se traspasa.
+    # Latente: cuota de 10.000 (1.980) − cuota de hoy (950) = 1.030.
+    posiciones = [posicion("ETF", TipoProducto.ETF, "20", "25"), posicion("Fondo", TipoProducto.FONDO, "20", "25")]
+    operaciones = operaciones_traspasar_fondos(posiciones)
+    assert operaciones == {"ETF": Escenario.VENTA_ETF, "Fondo": Escenario.TRASPASO_FONDO}
+
+    plan = simular_plan(posiciones, operaciones)
+    assert (plan.cuota, plan.retencion, plan.impuesto_latente) == (D("950"), D("0"), D("1030"))
+
+
+def test_un_etf_no_se_puede_traspasar_en_un_plan():
+    posiciones = [posicion("ETF", TipoProducto.ETF, "20", "25")]
+    with pytest.raises(ValueError, match="no admite traspaso"):
+        simular_plan(posiciones, {"ETF": Escenario.TRASPASO_FONDO})
+
+
+def test_un_fondo_no_se_vende_como_etf():
+    posiciones = [posicion("Fondo", TipoProducto.FONDO, "20", "25")]
+    with pytest.raises(ValueError, match="es un fondo"):
+        simular_plan(posiciones, {"Fondo": Escenario.VENTA_ETF})
+
+
+def test_nombres_repetidos_dan_error():
+    posiciones = [posicion("A", TipoProducto.FONDO, "20", "25"), posicion("A", TipoProducto.FONDO, "20", "30")]
+    with pytest.raises(ValueError, match="mismo nombre"):
+        simular_plan(posiciones, {"A": Escenario.REEMBOLSO_FONDO})
+
+
+def test_falta_la_operacion_de_una_posicion():
+    posiciones = caso_i()
+    with pytest.raises(ValueError, match="Fondo B"):
+        simular_plan(posiciones, {"Fondo A": Escenario.REEMBOLSO_FONDO})
