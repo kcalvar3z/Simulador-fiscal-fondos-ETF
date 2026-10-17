@@ -1,0 +1,31 @@
+# Tema de la app: neutros sobre blanco, azul de acento y bordes grises suaves.
+
+[theme]
+base = "light"
+primaryColor = "#0062dd"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4f4f9"
+textColor = "#2d2d32"
+linkColor = "#0062dd"
+grayTextColor = "#616166"
+borderColor = "#c8c8cd"
+showWidgetBorder = true
+baseRadius = "4px"
+
+# Avisos: azul claro para la información y ámbar para las advertencias.
+blueBackgroundColor = "#e6f3ff"
+yellowColor = "#f5aa20"
+yellowTextColor = "#2d2d32"
+
+# Tablas.
+dataframeBorderColor = "#c8c8cd"
+dataframeHeaderBackgroundColor = "#f4f4f9"
+dataframeHeaderTextColor = "#000000"
+
+# Tipografía libre (Google Fonts) con alternativas del sistema.
+font = "'Nunito Sans':https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap, Helvetica, Arial, sans-serif"
+headingFontWeights = 700
+
+[browser]
+# Sin estadísticas de uso de Streamlit: coherente con el aviso de privacidad de la app.
+gatherUsageStats = false
