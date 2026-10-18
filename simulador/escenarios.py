@@ -21,7 +21,7 @@ from decimal import Decimal
 from enum import Enum
 
 from simulador import normativa
-from simulador.calculo import calcular_ganancia, cuota_ahorro, retencion
+from simulador.calculo import ResultadoVenta, calcular_ganancia, cuota_ahorro, retencion
 from simulador.compensacion import ResultadoCompensacion, SaldoPendiente, compensar_base_ahorro
 from simulador.lotes import Lote, TipoProducto, Venta
 
@@ -76,6 +76,7 @@ class ResultadoPosicion:
     nombre: str
     operacion: Escenario
     ganancia_patrimonial: Decimal  # tribute hoy o no
+    valor_adquisicion: Decimal  # de las participaciones vendidas o traspasadas (FIFO)
     retencion: Decimal
     avisos: tuple[Aviso, ...] = ()
 
@@ -86,6 +87,7 @@ class ResultadoPlan:
     cuota: Decimal  # atribuible a las operaciones que tributan hoy; negativa si las pérdidas ahorran impuesto
     impuesto_latente: Decimal  # cuota diferida por los traspasos, calculada como si se reembolsaran hoy
     compensacion: ResultadoCompensacion  # base del ahorro y saldos pendientes resultantes
+    base_ahorro_sin_operaciones: Decimal  # para desglosar la cuota por tramos
     avisos: tuple[Aviso, ...] = ()  # los que afectan al plan entero
 
     @property
@@ -131,7 +133,8 @@ def simular_plan(
     """Calcula el coste fiscal de aplicar a cada posición la operación indicada por su nombre."""
     _validar_plan(posiciones, operaciones)
 
-    ganancias = {p.nombre: calcular_ganancia(p.lotes, p.venta).ganancia_patrimonial for p in posiciones}
+    ventas = {p.nombre: calcular_ganancia(p.lotes, p.venta) for p in posiciones}
+    ganancias = {nombre: venta.ganancia_patrimonial for nombre, venta in ventas.items()}
     ganancia_hoy = sum(
         (ganancias[p.nombre] for p in posiciones if operaciones[p.nombre] is not Escenario.TRASPASO_FONDO),
         CERO,
@@ -146,7 +149,7 @@ def simular_plan(
     cuota_todo = cuota_ahorro(reembolsando_todo.base_ahorro)
 
     resultados = tuple(
-        _resultado_posicion(posicion, operaciones[posicion.nombre], ganancias[posicion.nombre])
+        _resultado_posicion(posicion, operaciones[posicion.nombre], ventas[posicion.nombre])
         for posicion in posiciones
     )
     avisos = (Aviso.SALDOS_CADUCADOS,) if _hay_caducados(con_operaciones_de_hoy) else ()
@@ -155,6 +158,7 @@ def simular_plan(
         cuota=cuota_hoy - cuota_sin,
         impuesto_latente=cuota_todo - cuota_hoy,
         compensacion=con_operaciones_de_hoy,
+        base_ahorro_sin_operaciones=sin_operaciones.base_ahorro,
         avisos=avisos,
     )
 
@@ -225,7 +229,8 @@ def _validar_plan(posiciones: Sequence[Posicion], operaciones: Mapping[str, Esce
             raise ValueError(f"El simulador solo cubre el ejercicio {normativa.EJERCICIO}.")
 
 
-def _resultado_posicion(posicion: Posicion, operacion: Escenario, ganancia: Decimal) -> ResultadoPosicion:
+def _resultado_posicion(posicion: Posicion, operacion: Escenario, venta: ResultadoVenta) -> ResultadoPosicion:
+    ganancia = venta.ganancia_patrimonial
     se_traspasa = operacion is Escenario.TRASPASO_FONDO
     avisos = []
     if ganancia < 0 and not se_traspasa:
@@ -238,6 +243,7 @@ def _resultado_posicion(posicion: Posicion, operacion: Escenario, ganancia: Deci
         nombre=posicion.nombre,
         operacion=operacion,
         ganancia_patrimonial=ganancia,
+        valor_adquisicion=venta.valor_adquisicion,
         retencion=CERO if se_traspasa else retencion(ganancia, posicion.tipo),
         avisos=tuple(avisos),
     )
