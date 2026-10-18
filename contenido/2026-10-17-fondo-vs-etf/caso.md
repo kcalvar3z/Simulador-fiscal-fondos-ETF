@@ -32,3 +32,7 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 plotly_get_chrome            # una sola vez: Chrome para exportar a PNG
 python -m simulador.graficos
 ```
+
+---
+
+Cálculo orientativo con fines divulgativos. No constituye asesoramiento fiscal ni financiero.
