@@ -32,7 +32,7 @@ def test_figura_del_caso_b_dibuja_las_cifras_del_simulador():
     figura = figura_fondo_frente_a_etf(caso_b(), DESCRIPCION_CASO_B)
 
     # Orden de las barras: reembolso, traspaso, venta de ETF.
-    series = {traza.name: list(traza.x) for traza in figura.data}
+    series = {traza.name: list(traza.y) for traza in figura.data}
     assert series == {
         "Retención al vender": [D("1900"), D("0"), D("0")],
         "Pago en la Renta": [D("80"), D("0"), D("1980")],
