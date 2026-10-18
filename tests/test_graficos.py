@@ -13,6 +13,7 @@ from simulador.graficos import (
     figura_fondo_frente_a_etf,
     figura_rentabilidad,
     pasos_cascada,
+    texto_diferimiento,
 )
 from simulador.lotes import Lote, TipoProducto, Venta
 from simulador.rentabilidad import rentabilidad
@@ -31,16 +32,18 @@ def test_euros_sin_centimos(importe, texto):
 def test_figura_del_caso_b_dibuja_las_cifras_del_simulador():
     figura = figura_fondo_frente_a_etf(caso_b(), DESCRIPCION_CASO_B)
 
-    # Orden de las barras: reembolso, traspaso, venta de ETF.
+    # Orden de las barras: reembolso, traspaso (vacía: hoy no se paga nada), venta de ETF.
     series = {traza.name: list(traza.y) for traza in figura.data}
     assert series == {
         "Retención al vender": [D("1900"), D("0"), D("0")],
-        "Pago en la Renta": [D("80"), D("0"), D("1980")],
-        "Aplazado con el traspaso": [D("0"), D("1980"), D("0")],
+        "Pago IRPF": [D("80"), D("0"), D("1980")],
     }
     textos = [anotacion.text for anotacion in figura.layout.annotations]
     assert textos.count("1.980 € este año") == 2
-    assert "0 € hoy · 1.980 € aplazados" in textos
+    assert "0 € este año" in textos
+    # El panel lateral explica el diferimiento con el impuesto latente del simulador.
+    assert texto_diferimiento(D("1980")) in textos
+    assert "Los 1.980 € no desaparecen" in texto_diferimiento(D("1980"))
     assert PIE in textos
     assert "no constituye asesoramiento fiscal" in PIE
 

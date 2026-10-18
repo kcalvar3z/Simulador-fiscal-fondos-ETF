@@ -47,7 +47,8 @@ INFORME_EJES = "#a0a0a0"
 INFORME_REJILLA = "#e6e6e6"
 INFORME_RETENCION = "#c0392b"
 INFORME_RENTA = "#cf7f00"
-INFORME_APLAZADO = "#3b6aa0"
+INFORME_APLAZADO = "#3b6aa0"  # filete del panel del diferimiento
+INFORME_PANEL = "#f4f5f7"
 INFORME_FUENTE = "DejaVu Sans, Liberation Sans, Arial, sans-serif"
 
 PIE = (
@@ -88,18 +89,34 @@ class _Barra:
     detalle: str
     retencion: Decimal
     en_renta: Decimal
-    aplazado: Decimal
     rotulo: str  # cifra encima de la barra
 
     @property
     def total(self) -> Decimal:
-        return self.retencion + self.en_renta + self.aplazado
+        return self.retencion + self.en_renta
+
+
+def texto_diferimiento(impuesto_latente: Decimal) -> str:
+    """Explicación del panel lateral; los saltos de línea son manuales porque Plotly no ajusta texto."""
+    return (
+        "<b>¿Por qué 0 € con el traspaso?</b><br><br>"
+        "El traspaso entre fondos no tributa:<br>"
+        "la ganancia se <b>difiere</b>, es decir, se<br>"
+        "aplaza hasta que reembolses.<br><br>"
+        f"Los {euros(impuesto_latente)} no desaparecen: se<br>"
+        "pagan al reembolsar el nuevo fondo,<br>"
+        "que conserva el coste y la fecha de<br>"
+        "compra originales (art. 94 LIRPF).<br><br>"
+        "Un ETF no admite traspaso: venderlo<br>"
+        "siempre tributa en el ejercicio."
+    )
 
 
 def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripcion_caso: str) -> go.Figure:
-    """Barras apiladas: qué se paga hoy (retención y Renta) y qué se aplaza en cada escenario.
+    """Barras apiladas con lo que se paga este año en cada escenario.
 
-    Pensado para una venta con ganancia: la retención no supera la cuota y el latente es positivo.
+    La barra del traspaso queda vacía (no se paga nada hoy) y un panel lateral explica el
+    diferimiento con el impuesto latente. Pensado para una venta con ganancia.
     """
     por_escenario = {resultado.escenario: resultado for resultado in resultados}
     reembolso = por_escenario[Escenario.REEMBOLSO_FONDO]
@@ -115,25 +132,10 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             f"{euros(reembolso.retencion)} de retención + {euros(reembolso.regularizacion_renta)} en la Renta",
             reembolso.retencion,
             reembolso.regularizacion_renta,
-            cero,
             f"{euros(reembolso.cuota)} este año",
         ),
-        _Barra(
-            "Traspasar a otro fondo",
-            "Sin impuesto ni retención hoy",
-            cero,
-            cero,
-            traspaso.impuesto_latente,
-            f"0 € hoy · {euros(traspaso.impuesto_latente)} aplazados",
-        ),
-        _Barra(
-            "Vender el ETF",
-            "Sin retención; no admite traspaso",
-            cero,
-            etf.cuota,
-            cero,
-            f"{euros(etf.cuota)} este año",
-        ),
+        _Barra("Traspasar a otro fondo", "Sin impuesto ni retención hoy", cero, cero, "0 € este año"),
+        _Barra("Vender el ETF", "Sin retención; no admite traspaso", cero, etf.cuota, f"{euros(etf.cuota)} este año"),
     ]
     # Escenario y, debajo, su detalle en gris, como etiqueta del eje.
     categorias = [
@@ -145,8 +147,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
     figura = go.Figure()
     for nombre, campo, color in [
         ("Retención al vender", "retencion", INFORME_RETENCION),
-        ("Pago en la Renta", "en_renta", INFORME_RENTA),
-        ("Aplazado con el traspaso", "aplazado", INFORME_APLAZADO),
+        ("Pago IRPF", "en_renta", INFORME_RENTA),
     ]:
         figura.add_bar(
             x=categorias,
@@ -167,7 +168,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             font={"size": 16, "color": INFORME_TEXTO},
         )
 
-    maximo = max(barra.total for barra in barras)
+    # Cabecera y pie, a 24 px del borde izquierdo de la imagen.
     for desde_arriba, texto, fuente in [
         (18, "<b>Con un fondo puedes aplazar el impuesto. Con un ETF, no.</b>", {"size": 22, "color": INFORME_TEXTO}),
         (52, descripcion_caso, {"size": 14, "color": INFORME_TEXTO_SECUNDARIO}),
@@ -176,7 +177,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         figura.add_annotation(
             xref="paper",
             yref="paper",
-            x=-(90 - 24) / (INFORME_ANCHO - 90 - 40),  # a 24 px del borde izquierdo de la imagen
+            x=_x_informe(24),
             y=_y_informe(desde_arriba),
             xanchor="left",
             yanchor="top",
@@ -186,6 +187,45 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             font=fuente,
         )
 
+    # Panel lateral con la explicación del diferimiento: fondo gris claro y filete azul a la izquierda.
+    izquierda, derecha = INFORME_ANCHO - _INFORME_MARGEN_DERECHO + 30, INFORME_ANCHO - 24
+    arriba, abajo = _INFORME_MARGEN_SUPERIOR, INFORME_ALTO - _INFORME_MARGEN_INFERIOR
+    figura.add_shape(
+        type="rect",
+        xref="paper",
+        yref="paper",
+        x0=_x_informe(izquierda),
+        x1=_x_informe(derecha),
+        y0=_y_informe(abajo),
+        y1=_y_informe(arriba),
+        fillcolor=INFORME_PANEL,
+        line={"width": 0},
+        layer="below",
+    )
+    figura.add_shape(
+        type="line",
+        xref="paper",
+        yref="paper",
+        x0=_x_informe(izquierda),
+        x1=_x_informe(izquierda),
+        y0=_y_informe(abajo),
+        y1=_y_informe(arriba),
+        line={"color": INFORME_APLAZADO, "width": 4},
+    )
+    figura.add_annotation(
+        xref="paper",
+        yref="paper",
+        x=_x_informe(izquierda + 20),
+        y=_y_informe(arriba + 20),
+        xanchor="left",
+        yanchor="top",
+        align="left",
+        showarrow=False,
+        text=texto_diferimiento(traspaso.impuesto_latente),
+        font={"size": 14, "color": INFORME_TEXTO},
+    )
+
+    maximo = max(barra.total for barra in barras)
     eje = {"showline": True, "linecolor": INFORME_EJES, "linewidth": 1, "ticks": "outside", "tickcolor": INFORME_EJES}
     figura.update_layout(
         width=INFORME_ANCHO,
@@ -195,7 +235,12 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         paper_bgcolor=INFORME_FONDO,
         plot_bgcolor=INFORME_FONDO,
         font={"family": INFORME_FUENTE, "color": INFORME_TEXTO, "size": 14},
-        margin={"l": 90, "r": 40, "t": _INFORME_MARGEN_SUPERIOR, "b": _INFORME_MARGEN_INFERIOR},
+        margin={
+            "l": _INFORME_MARGEN_IZQUIERDO,
+            "r": _INFORME_MARGEN_DERECHO,
+            "t": _INFORME_MARGEN_SUPERIOR,
+            "b": _INFORME_MARGEN_INFERIOR,
+        },
         legend={
             "orientation": "h",
             "x": 0.01,
@@ -206,7 +251,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             "font": {"size": 14, "color": INFORME_TEXTO},
             "traceorder": "normal",
         },
-        xaxis={**eje, "tickfont": {"size": 15, "color": INFORME_TEXTO}},
+        xaxis={**eje, "tickfont": {"size": 14, "color": INFORME_TEXTO}},
         yaxis={
             **eje,
             "title": {"text": f"Impuesto en el IRPF {normativa.EJERCICIO} (€)", "font": {"size": 14}},
@@ -221,10 +266,18 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
     return figura
 
 
-# Geometría del informe (px). El área del gráfico va de _INFORME_MARGEN_SUPERIOR a
-# INFORME_ALTO − _INFORME_MARGEN_INFERIOR.
+# Geometría del informe (px). El área del gráfico va de los márgenes hacia dentro; a la
+# derecha queda sitio para el panel del diferimiento.
+_INFORME_MARGEN_IZQUIERDO = 90
+_INFORME_MARGEN_DERECHO = 370
 _INFORME_MARGEN_SUPERIOR = 100
 _INFORME_MARGEN_INFERIOR = 110
+
+
+def _x_informe(desde_izquierda_px: float) -> float:
+    """Convierte una distancia en píxeles desde el borde izquierdo a coordenada `paper` de Plotly."""
+    ancho_grafico = INFORME_ANCHO - _INFORME_MARGEN_IZQUIERDO - _INFORME_MARGEN_DERECHO
+    return (desde_izquierda_px - _INFORME_MARGEN_IZQUIERDO) / ancho_grafico
 
 
 def _y_informe(desde_arriba_px: float) -> float:
