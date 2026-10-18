@@ -24,7 +24,9 @@ from simulador.escenarios import (
     operaciones_traspasar_fondos,
     simular_plan,
 )
+from simulador.graficos import figura_cascada, figura_rentabilidad, pasos_cascada, porcentaje
 from simulador.lotes import Lote, TipoProducto, Venta
+from simulador.rentabilidad import rentabilidad
 
 AVISO_LEGAL = "Cálculo orientativo con fines divulgativos. No constituye asesoramiento fiscal ni financiero."
 PRIVACIDAD = "Tus datos no se guardan: solo existen mientras tienes la página abierta."
@@ -409,6 +411,8 @@ def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -
     for texto in textos_avisos(planes):
         st.warning(texto)
 
+    mostrar_visualizacion(posiciones, planes)
+
     with st.expander("Ver la tabla completa"):
         st.dataframe(tabla_comparativa(planes), width="stretch")
     with st.expander("Cómo leer el resultado"):
@@ -426,6 +430,67 @@ def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -
         )
     with st.expander("Supuestos y alcance"):
         st.markdown(SUPUESTOS)
+
+
+def resumen_neto(plan: ResultadoPlan) -> tuple[Decimal, Decimal, Decimal] | None:
+    """(ganancia de lo que se vende, invertido en lo que se vende, neto tras el IRPF), o None si no se vende nada."""
+    vendidas = [p for p in plan.posiciones if p.operacion is not Escenario.TRASPASO_FONDO]
+    if not vendidas:
+        return None
+    ganancia = sum((p.ganancia_patrimonial for p in vendidas), Decimal("0"))
+    invertido = sum((p.valor_adquisicion for p in vendidas), Decimal("0"))
+    return ganancia, invertido, ganancia - plan.cuota
+
+
+def nota_plan(plan: ResultadoPlan) -> str:
+    """Retención, efecto en la Renta y ganancia aplazada del plan, en una o dos frases."""
+    frases = []
+    if plan.retencion > 0:
+        frases.append(
+            f"Al reembolsar se retienen {formato_euros(plan.retencion)}; el efecto en la Renta es de "
+            f"{formato_euros(plan.regularizacion_renta)} (cuota menos retención)."
+        )
+    traspasadas = [p for p in plan.posiciones if p.operacion is Escenario.TRASPASO_FONDO]
+    if traspasadas:
+        aplazada = sum((p.ganancia_patrimonial for p in traspasadas), Decimal("0"))
+        frases.append(
+            f"Con el traspaso aplazas {formato_euros(aplazada)} de ganancia; el impuesto latente es de "
+            f"{formato_euros(plan.impuesto_latente)}."
+        )
+    return " ".join(frases)
+
+
+def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]) -> None:
+    paso("04 · Visualización", "Tus inversiones, de un vistazo")
+
+    st.markdown("**Rentabilidad de tus inversiones**")
+    filas = [(p.nombre, rentabilidad(p.lotes, p.venta.precio_unitario, p.venta.fecha)) for p in posiciones]
+    st.plotly_chart(figura_rentabilidad(filas), width="stretch", config={"displayModeBar": False})
+    st.caption(
+        "Antes de impuestos, con todas tus participaciones valoradas al precio de hoy. La rentabilidad anual "
+        "(TIR) solo se muestra a partir de un año desde la primera compra."
+    )
+
+    st.markdown("**De la ganancia al neto tras el IRPF**")
+    disponibles = [plan for plan in planes if plan.resultado is not None]
+    titulo = st.radio("Plan", [plan.titulo for plan in disponibles], horizontal=True, label_visibility="collapsed")
+    plan = next(plan.resultado for plan in disponibles if plan.titulo == titulo)
+
+    resumen = resumen_neto(plan)
+    if resumen is None:
+        st.info(f"Con este plan no vendes nada, así que hoy no hay impuesto. {nota_plan(plan)}")
+        return
+    ganancia, invertido, neto = resumen
+    st.plotly_chart(figura_cascada(pasos_cascada(plan)), width="stretch", config={"displayModeBar": False})
+    antes, impuesto, despues = st.columns(3)
+    antes.metric("Ganancia antes de impuestos", formato_euros(ganancia))
+    antes.caption(f"{porcentaje(ganancia / invertido)} sobre lo invertido en lo que vendes")
+    impuesto.metric(f"IRPF {normativa.EJERCICIO}", formato_euros(plan.cuota))
+    despues.metric("Neto tras impuestos", formato_euros(neto))
+    despues.caption(f"{porcentaje(neto / invertido)} sobre lo invertido en lo que vendes")
+    nota = nota_plan(plan)
+    if nota:
+        st.caption(nota)
 
 
 # --- Página ---------------------------------------------------------------------------------------

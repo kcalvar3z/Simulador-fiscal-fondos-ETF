@@ -59,6 +59,49 @@ def cuota_ahorro(
     return cuota
 
 
+@dataclass(frozen=True)
+class TramoAplicado:
+    """Parte de la base que cae en un tramo de la escala y su cuota (negativa si la base baja)."""
+
+    desde: Decimal
+    hasta: Decimal
+    tipo: Decimal
+    cuota: Decimal
+
+    @property
+    def importe(self) -> Decimal:
+        return self.hasta - self.desde
+
+
+def desglose_cuota(
+    base_sin_venta: Decimal,
+    base_con_venta: Decimal,
+    escala: Sequence[Tramo] = normativa.ESCALA_AHORRO_2026,
+) -> tuple[TramoAplicado, ...]:
+    """Tramos que recorre la base al pasar de `base_sin_venta` a `base_con_venta`.
+
+    La suma de las cuotas es `cuota_incremental`. Si la base baja (una pérdida), las cuotas
+    son negativas: es impuesto que se deja de pagar.
+    """
+    for base in (base_sin_venta, base_con_venta):
+        if base < 0:
+            raise ValueError("La base liquidable del ahorro no puede ser negativa.")
+    signo = 1 if base_con_venta >= base_sin_venta else -1
+    inferior, superior = sorted((base_sin_venta, base_con_venta))
+    tramos = []
+    desde_tramo = Decimal("0")
+    for tramo in escala:
+        hasta_tramo = superior if tramo.hasta is None else tramo.hasta
+        desde = max(inferior, desde_tramo)
+        hasta = min(superior, hasta_tramo)
+        if hasta > desde:
+            tramos.append(TramoAplicado(desde, hasta, tramo.tipo, signo * (hasta - desde) * tramo.tipo))
+        if tramo.hasta is None or hasta_tramo >= superior:
+            break
+        desde_tramo = hasta_tramo
+    return tuple(tramos)
+
+
 def cuota_incremental(base_sin_venta: Decimal, base_con_venta: Decimal) -> Decimal:
     """Cuota atribuible a la venta: aísla su efecto del resto de rentas del ahorro."""
     return cuota_ahorro(base_con_venta) - cuota_ahorro(base_sin_venta)

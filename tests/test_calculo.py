@@ -7,6 +7,7 @@ from simulador.calculo import (
     calcular_ganancia,
     cuota_ahorro,
     cuota_incremental,
+    desglose_cuota,
     redondear_centimos,
     retencion,
 )
@@ -97,3 +98,40 @@ def test_sin_ganancia_no_hay_retencion(ganancia):
 )
 def test_redondeo_a_centimos_half_up(importe, redondeado):
     assert redondear_centimos(importe) == redondeado
+
+
+# Desglose de la cuota por tramos
+
+
+def test_desglose_caso_b_dos_tramos():
+    # Base de 0 a 10.000: 6.000 × 19 % = 1.140 y 4.000 × 21 % = 840.
+    tramos = desglose_cuota(D("0"), D("10000"))
+    assert [(t.desde, t.hasta, t.tipo, t.cuota) for t in tramos] == [
+        (D("0"), D("6000"), D("0.19"), D("1140")),
+        (D("6000"), D("10000"), D("0.21"), D("840")),
+    ]
+    assert sum(t.cuota for t in tramos) == cuota_incremental(D("0"), D("10000"))
+
+
+def test_desglose_empezando_a_mitad_de_un_tramo():
+    # Base previa de 6.000: los 4.000 € caen enteros en el tramo del 21 %.
+    (tramo,) = desglose_cuota(D("6000"), D("10000"))
+    assert (tramo.importe, tramo.cuota) == (D("4000"), D("840"))
+
+
+def test_desglose_hasta_el_ultimo_tramo_abierto():
+    tramos = desglose_cuota(D("290000"), D("310000"))
+    assert [(t.importe, t.tipo, t.cuota) for t in tramos] == [
+        (D("10000"), D("0.27"), D("2700")),
+        (D("10000"), D("0.30"), D("3000")),
+    ]
+
+
+def test_desglose_si_la_base_baja_las_cuotas_son_negativas():
+    # Caso G: la base pasa de 4.000 a 3.000 → 1.000 × 19 % de ahorro.
+    (tramo,) = desglose_cuota(D("4000"), D("3000"))
+    assert (tramo.importe, tramo.cuota) == (D("1000"), D("-190"))
+
+
+def test_desglose_sin_cambio_de_base_esta_vacio():
+    assert desglose_cuota(D("5000"), D("5000")) == ()

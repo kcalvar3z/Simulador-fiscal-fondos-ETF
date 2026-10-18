@@ -84,3 +84,15 @@ Manual práctico de Renta 2025, cap. 12, con los ejercicios desplazados un año 
 | Traspasar A, reembolsar B | 0 (quedan 4.000 € de pérdida pendiente) | 0 | 0 | 1.140,00 |
 
 En el primer plan la retención supera la cuota porque no descuenta la pérdida de B: la diferencia se devuelve en la Renta.
+
+## Caso J – Desglose de la cuota por tramos
+
+- Base del ahorro de 0 a 10.000 € (caso B): 6.000 × 19 % = 1.140,00 y 4.000 × 21 % = 840,00. Suma: 1.980,00.
+- Base de 6.000 a 10.000 €: un solo tramo, 4.000 × 21 % = 840,00.
+- Base de 4.000 a 3.000 € (caso G): 1.000 × 19 % = −190,00 (ahorro).
+
+## Caso K – Rentabilidad total y anual (TIR)
+
+- Una compra: 20.000 € el 16-10-2024 que valen 30.000 € el 16-10-2026. Total: +50 %. Anual: 1,5^(1/2) − 1 = **22,47 %**.
+- Dos compras: 1.000 € el 16-10-2024 y 1.000 € el 16-10-2025; valen 2.310 € el 16-10-2026. Al 10 %: 1.000 × 1,1² + 1.000 × 1,1 = 2.310 → TIR **10,00 %**.
+- Con menos de un año desde la primera compra no se anualiza (solo rentabilidad total).
