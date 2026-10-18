@@ -12,7 +12,9 @@ El autor es un estudiante de Derecho + ADE que quiere posicionarse en fiscalidad
 1. **Parte de un caso calculado con el simulador** (nunca de cifras inventadas). Guarda el script o los parámetros usados en `contenido/AAAA-MM-DD-tema/` para poder reproducirlo.
 2. **Comprueba a mano** la cifra principal del post antes de redactar.
 3. **Genera el gráfico** con `simulador/graficos.py`:
-   - Formato vertical 1080×1350 px, PNG.
+   - Formato apaisado 1200×600 px, exportado a 2400×1200 px (escala 2) para que se vea nítido, PNG.
+   - Estilo de informe analítico: fondo blanco, ejes finos en gris, rejilla suave, leyenda sin recuadro y tipografía sencilla. Usa las constantes `INFORME_*` de `simulador/graficos.py`.
+   - Colores validados con la skill `dataviz` en modo claro; nunca rojo y verde juntos (fallan con daltonismo).
    - Una sola idea por gráfico (p. ej. barras con la cuota de hoy en los tres escenarios).
    - Título que sea la conclusión, no la descripción.
    - Fuente y aviso en el pie: "Elaboración propia. IRPF 2026, territorio común. Cálculo orientativo."

@@ -23,6 +23,7 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 ## Normativa citada
 
 - Traspaso sin tributar y exclusión de los ETF: art. 94.1.a y 94.2.a LIRPF (ETF extranjeros desde el 1-1-2022, Ley 11/2021).
+- Régimen transitorio para ETF extranjeros adquiridos antes del 1-1-2022 y no cotizados en bolsa española: DT 36.ª LIRPF (solo se menciona; el simulador no lo calcula).
 - Retención del 19 % en el reembolso: art. 101.6 LIRPF; sin retención en la venta de ETF: art. 75.3.j RIRPF.
 - Escala del ahorro: arts. 66 y 76 LIRPF.
 
