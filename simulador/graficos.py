@@ -129,7 +129,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
     barras = [
         _Barra(
             "Reembolsar el fondo",
-            f"{euros(reembolso.retencion)} de retención + {euros(reembolso.regularizacion_renta)} en la Renta",
+            f"{euros(reembolso.retencion)} de retención<br>+ {euros(reembolso.regularizacion_renta)} a ingresar en la Renta",
             reembolso.retencion,
             reembolso.regularizacion_renta,
             f"{euros(reembolso.cuota)} este año",
@@ -146,8 +146,8 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
 
     figura = go.Figure()
     for nombre, campo, color in [
-        ("Retención al vender", "retencion", INFORME_RETENCION),
-        ("Pago IRPF", "en_renta", INFORME_RENTA),
+        ("Retención al vender (pago a cuenta)", "retencion", INFORME_RETENCION),
+        ("A ingresar en la declaración de la Renta", "en_renta", INFORME_RENTA),
     ]:
         figura.add_bar(
             x=categorias,
@@ -251,10 +251,12 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             "font": {"size": 14, "color": INFORME_TEXTO},
             "traceorder": "normal",
         },
-        xaxis={**eje, "tickfont": {"size": 14, "color": INFORME_TEXTO}},
+        # Márgenes fijos: sin automargin, Plotly no mueve la composición si una etiqueta es larga.
+        xaxis={**eje, "tickangle": 0, "automargin": False, "tickfont": {"size": 14, "color": INFORME_TEXTO}},
         yaxis={
             **eje,
-            "title": {"text": f"Impuesto en el IRPF {normativa.EJERCICIO} (€)", "font": {"size": 14}},
+            "automargin": False,
+            "title": {"text": f"Cuota de IRPF por la venta, {normativa.EJERCICIO} (€)", "font": {"size": 14}},
             "range": [0, maximo * Decimal("1.4")],  # aire para la leyenda y las cifras
             "tickformat": ",d",
             "ticksuffix": " €",
@@ -268,7 +270,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
 
 # Geometría del informe (px). El área del gráfico va de los márgenes hacia dentro; a la
 # derecha queda sitio para el panel del diferimiento.
-_INFORME_MARGEN_IZQUIERDO = 90
+_INFORME_MARGEN_IZQUIERDO = 110
 _INFORME_MARGEN_DERECHO = 370
 _INFORME_MARGEN_SUPERIOR = 100
 _INFORME_MARGEN_INFERIOR = 110

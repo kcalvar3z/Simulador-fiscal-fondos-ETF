@@ -35,8 +35,8 @@ def test_figura_del_caso_b_dibuja_las_cifras_del_simulador():
     # Orden de las barras: reembolso, traspaso (vacía: hoy no se paga nada), venta de ETF.
     series = {traza.name: list(traza.y) for traza in figura.data}
     assert series == {
-        "Retención al vender": [D("1900"), D("0"), D("0")],
-        "Pago IRPF": [D("80"), D("0"), D("1980")],
+        "Retención al vender (pago a cuenta)": [D("1900"), D("0"), D("0")],
+        "A ingresar en la declaración de la Renta": [D("80"), D("0"), D("1980")],
     }
     textos = [anotacion.text for anotacion in figura.layout.annotations]
     assert textos.count("1.980 € este año") == 2
