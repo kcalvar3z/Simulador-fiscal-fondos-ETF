@@ -112,7 +112,9 @@ def test_app_muestra_el_caso_b_por_defecto():
     reembolso = tabla["Reembolso del fondo"]
     assert (reembolso[CUOTA], reembolso[RETENCION], reembolso[EFECTO_RENTA]) == ("1.980,00 €", "1.900,00 €", "80,00 €")
     assert tabla["Traspaso a otro fondo"][LATENTE] == "1.980,00 €"
-    assert [m.value for m in app.metric] == ["1.980,00 €", "0,00 €"]
+    # Tarjetas de resultado y, en la visualización, ganancia, IRPF y neto del reembolso.
+    assert [m.value for m in app.metric] == ["1.980,00 €", "0,00 €", "10.000,00 €", "1.980,00 €", "8.020,00 €"]
+    assert any("+40,1 % sobre lo invertido" in c.value for c in app.caption)
     assert any(AVISO_LEGAL in aviso.value for aviso in app.info)
 
 
@@ -156,3 +158,10 @@ def test_app_quitar_el_segundo_fondo_vuelve_a_un_solo_producto():
     app.button(key="quitar_1").click().run()
     assert not app.exception
     assert list(tabla_resultados(app).columns) == ["Reembolso del fondo", "Traspaso a otro fondo"]
+
+
+def test_app_selector_de_plan_con_el_traspaso_no_hay_cascada():
+    app = ejecutar_app()
+    app.radio[-1].set_value("Traspaso a otro fondo").run()
+    assert not app.exception
+    assert any("no vendes nada" in aviso.value and "1.980,00 €" in aviso.value for aviso in app.info)

@@ -16,8 +16,10 @@ from pathlib import Path
 import plotly.graph_objects as go
 
 from simulador import normativa
-from simulador.escenarios import Escenario, ResultadoEscenario, comparar_escenarios
+from simulador.calculo import desglose_cuota
+from simulador.escenarios import Escenario, ResultadoEscenario, ResultadoPlan, comparar_escenarios
 from simulador.lotes import Lote, Venta
+from simulador.rentabilidad import Rentabilidad
 
 ANCHO, ALTO = 1080, 1350  # formato vertical de LinkedIn
 
@@ -60,6 +62,23 @@ def euros(importe: Decimal) -> str:
     """Formato del post, sin céntimos: Decimal("1980") → "1.980 €"."""
     unidades = importe.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     return f"{unidades:,}".replace(",", ".") + " €"
+
+
+def euros_con_signo(importe: Decimal) -> str:
+    """Decimal("-1140") → "-1.140 €"; Decimal("10000") → "+10.000 €"."""
+    texto = euros(importe)
+    return texto if texto.startswith("-") or texto == "0 €" else f"+{texto}"
+
+
+def porcentaje(valor: Decimal) -> str:
+    """Rentabilidad con signo y un decimal: Decimal("0.5") → "+50,0 %"."""
+    texto = f"{(valor * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP):+.1f}"
+    return texto.replace(".", ",") + " %"
+
+
+def tipo_impositivo(tipo: Decimal) -> str:
+    """Tipo de la escala: Decimal("0.19") → "19 %"."""
+    return f"{(tipo * 100).normalize():f}".replace(".", ",") + " %"
 
 
 @dataclass(frozen=True)
@@ -220,6 +239,139 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         },
     )
     return figura
+
+
+# --- Gráficos de la app ----------------------------------------------------------------------------
+
+
+def _estilo_app(figura: go.Figure, alto: int) -> go.Figure:
+    """Fondo transparente y tipografía de la app; los colores de texto son los del tema oscuro."""
+    figura.update_layout(
+        height=alto,
+        separators=",.",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"family": FUENTE, "color": TEXTO, "size": 14},
+        margin={"l": 10, "r": 10, "t": 40, "b": 10},
+        legend={"orientation": "h", "x": 0, "y": 1.02, "xanchor": "left", "yanchor": "bottom"},
+        hoverlabel={"font": {"family": FUENTE}},
+    )
+    return figura
+
+
+def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
+    """Barras por inversión: lo invertido frente a lo que vale hoy, con la rentabilidad al final."""
+    nombres = [nombre for nombre, _ in filas]
+    figura = go.Figure()
+    for serie, campo, color in [
+        ("Invertido", "invertido", COLOR_APLAZADO),
+        ("Valor hoy", "valor_actual", COLOR_RENTA),
+    ]:
+        importes = [getattr(r, campo) for _, r in filas]
+        figura.add_bar(
+            y=nombres,
+            x=importes,
+            name=serie,
+            orientation="h",
+            marker={"color": color, "line": {"color": FONDO, "width": 2}},
+            customdata=[euros(importe) for importe in importes],
+            hovertemplate="%{y}<br>" + serie + ": %{customdata}<extra></extra>",
+        )
+    maximo = max(max(r.invertido, r.valor_actual) for _, r in filas)
+    for nombre, r in filas:
+        anual = f"{porcentaje(r.anual)} anual" if r.anual is not None else "menos de un año"
+        figura.add_annotation(
+            x=max(r.invertido, r.valor_actual),
+            y=nombre,
+            xshift=10,
+            xanchor="left",
+            showarrow=False,
+            text=f"{euros_con_signo(r.ganancia)} · {porcentaje(r.total)} · {anual}",
+            font={"family": FUENTE_CIFRAS, "size": 14, "color": TEXTO},
+        )
+    figura.update_layout(
+        barmode="group",
+        bargap=0.35,
+        bargroupgap=0.08,
+        barcornerradius=4,
+        xaxis={
+            "range": [0, maximo * Decimal("1.7")],  # sitio para la rentabilidad
+            "ticksuffix": " €",
+            "tickformat": ",d",
+            "gridcolor": REJILLA,
+            "zerolinecolor": "#2d2d32",
+            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
+        },
+        yaxis={"autorange": "reversed", "tickfont": {"size": 15, "color": TEXTO}},
+    )
+    return _estilo_app(figura, alto=110 + 95 * len(filas))
+
+
+@dataclass(frozen=True)
+class PasoCascada:
+    etiqueta: str
+    importe: Decimal
+    total: bool = False  # True: subtotal o resultado; False: suma o resta
+
+
+def pasos_cascada(plan: ResultadoPlan) -> tuple[PasoCascada, ...]:
+    """De la ganancia de lo que se vende al neto tras el IRPF, en euros.
+
+    El impuesto se desglosa por tramos como si la ganancia se sumara sin más a la base del
+    ahorro; si las compensaciones (art. 49 LIRPF) lo reducen, la diferencia aparece como
+    ahorro. Las posiciones traspasadas no entran: no tributan hoy. Vacío si no se vende nada.
+    """
+    vendidas = [p for p in plan.posiciones if p.operacion is not Escenario.TRASPASO_FONDO]
+    if not vendidas:
+        return ()
+    pasos = [
+        PasoCascada(f"{'Ganancia' if p.ganancia_patrimonial >= 0 else 'Pérdida'} · {p.nombre}", p.ganancia_patrimonial)
+        for p in vendidas
+    ]
+    resultado = sum((p.ganancia_patrimonial for p in vendidas), Decimal("0"))
+    if len(vendidas) > 1:
+        pasos.append(PasoCascada("Resultado de la venta", resultado, total=True))
+
+    base = plan.base_ahorro_sin_operaciones
+    tramos = desglose_cuota(base, base + resultado) if resultado > 0 else ()
+    for tramo in tramos:
+        pasos.append(PasoCascada(f"IRPF · {euros(tramo.importe)} al {tipo_impositivo(tramo.tipo)}", -tramo.cuota))
+    ahorro = sum((tramo.cuota for tramo in tramos), Decimal("0")) - plan.cuota
+    if ahorro != 0:
+        pasos.append(PasoCascada("Ahorro por compensaciones", ahorro))
+    pasos.append(PasoCascada("Neto tras el IRPF", resultado - plan.cuota, total=True))
+    return tuple(pasos)
+
+
+def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
+    figura = go.Figure(
+        go.Waterfall(
+            x=[paso.etiqueta.replace(" · ", "<br>") for paso in pasos],
+            y=[paso.importe for paso in pasos],
+            measure=["total" if paso.total else "relative" for paso in pasos],
+            text=[euros(paso.importe) if paso.total else euros_con_signo(paso.importe) for paso in pasos],
+            textposition="outside",
+            textfont={"family": FUENTE_CIFRAS, "color": TEXTO},
+            increasing={"marker": {"color": COLOR_RENTA}},
+            decreasing={"marker": {"color": COLOR_RETENCION}},
+            totals={"marker": {"color": COLOR_APLAZADO}},
+            connector={"line": {"color": "#2d2d32", "width": 1}},
+            hovertemplate="%{x}: %{text}<extra></extra>",
+        )
+    )
+    figura.update_layout(
+        showlegend=False,
+        yaxis={
+            "ticksuffix": " €",
+            "tickformat": ",d",
+            "gridcolor": REJILLA,
+            "zerolinecolor": "#2d2d32",
+            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
+        },
+        xaxis={"tickfont": {"size": 13, "color": TEXTO}},
+    )
+    figura.update_yaxes(rangemode="tozero")
+    return _estilo_app(figura, alto=440)
 
 
 # --- Casos de los posts ---------------------------------------------------------------------------
