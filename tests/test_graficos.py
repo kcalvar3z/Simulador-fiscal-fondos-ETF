@@ -40,7 +40,7 @@ def test_figura_del_caso_b_dibuja_las_cifras_del_simulador():
     }
     textos = [anotacion.text for anotacion in figura.layout.annotations]
     assert textos.count("1.980 € este año") == 2
-    assert "0 € hoy<br>1.980 € aplazados" in textos
+    assert "0 € hoy · 1.980 € aplazados" in textos
     assert PIE in textos
     assert "no constituye asesoramiento fiscal" in PIE
 

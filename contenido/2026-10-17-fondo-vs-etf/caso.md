@@ -1,6 +1,6 @@
 # Caso del post: fondo frente a ETF (17-10-2026)
 
-Ficheros: `post.md` (texto para copiar) y `grafico.png` (1080×1350).
+Ficheros: `post.md` (texto para copiar) y `grafico.png` (apaisado, 1200×600 exportado a 2400×1200 px).
 
 ## Parámetros
 

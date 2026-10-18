@@ -1,7 +1,7 @@
-"""Gráficos del simulador para LinkedIn.
+"""Gráficos del simulador: el de LinkedIn y los de la app.
 
-`figura_fondo_frente_a_etf` dibuja los resultados del simulador; no calcula nada, así que
-las cifras del gráfico son siempre las de `escenarios.py`.
+Las figuras dibujan los resultados del simulador; no calculan nada, así que sus cifras
+son siempre las de `escenarios.py`.
 
 `python -m simulador.graficos` regenera las imágenes de `contenido/` con los casos de los
 posts. Exportar a PNG requiere Chrome: instálalo una vez con `plotly_get_chrome`.
@@ -21,11 +21,9 @@ from simulador.escenarios import Escenario, ResultadoEscenario, ResultadoPlan, c
 from simulador.lotes import Lote, Venta
 from simulador.rentabilidad import Rentabilidad
 
-ANCHO, ALTO = 1080, 1350  # formato vertical de LinkedIn
-
-# Estética de la app (terminal financiera). Los tres colores de las series están validados
-# con la skill dataviz en modo oscuro sobre FONDO: banda de luminosidad, croma, separación
-# con daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
+# Estética de la app (terminal financiera). Los colores de las series están validados con la
+# skill dataviz en modo oscuro sobre FONDO: banda de luminosidad, croma, separación con
+# daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
 FONDO = "#0a0a0a"
 TITULOS = "#ffffff"
 TEXTO = "#e8e8ed"
@@ -38,19 +36,19 @@ COLOR_APLAZADO = "#5b6ee8"
 FUENTE = "IBM Plex Sans, Liberation Sans, Arial, sans-serif"
 FUENTE_CIFRAS = "IBM Plex Mono, DejaVu Sans Mono, monospace"
 
-# Geometría (px). El área del gráfico va de _MARGEN_SUPERIOR a ALTO − _MARGEN_INFERIOR.
-_MARGEN_LATERAL = 70
-_MARGEN_SUPERIOR = 470
-_MARGEN_INFERIOR = 150
-_GROSOR_BARRA = 0.26  # fracción del hueco de cada escenario
-_MEDIA_BARRA_PX = round(_GROSOR_BARRA * (ALTO - _MARGEN_SUPERIOR - _MARGEN_INFERIOR) / 3 / 2)
-
-
-def _y(desde_arriba_px: float) -> float:
-    """Convierte una distancia en píxeles desde el borde superior a coordenada `paper` de Plotly."""
-    alto_grafico = ALTO - _MARGEN_SUPERIOR - _MARGEN_INFERIOR
-    return 1 - (desde_arriba_px - _MARGEN_SUPERIOR) / alto_grafico
-
+# Estética del gráfico de LinkedIn: informe analítico sobre blanco, apaisado. Colores validados
+# con la skill dataviz en modo claro sobre blanco (todas las parejas, sin avisos).
+INFORME_ANCHO, INFORME_ALTO = 1200, 600
+INFORME_ESCALA = 2  # se exporta a 2400 × 1200 px para que se vea nítido
+INFORME_FONDO = "#ffffff"
+INFORME_TEXTO = "#222222"
+INFORME_TEXTO_SECUNDARIO = "#666666"
+INFORME_EJES = "#a0a0a0"
+INFORME_REJILLA = "#e6e6e6"
+INFORME_RETENCION = "#c0392b"
+INFORME_RENTA = "#cf7f00"
+INFORME_APLAZADO = "#3b6aa0"
+INFORME_FUENTE = "DejaVu Sans, Liberation Sans, Arial, sans-serif"
 
 PIE = (
     f"Elaboración propia. IRPF {normativa.EJERCICIO}, territorio común. "
@@ -81,6 +79,9 @@ def tipo_impositivo(tipo: Decimal) -> str:
     return f"{(tipo * 100).normalize():f}".replace(".", ",") + " %"
 
 
+# --- Gráfico de LinkedIn ----------------------------------------------------------------------------
+
+
 @dataclass(frozen=True)
 class _Barra:
     escenario: str
@@ -88,7 +89,7 @@ class _Barra:
     retencion: Decimal
     en_renta: Decimal
     aplazado: Decimal
-    rotulo: str  # cifra al final de la barra
+    rotulo: str  # cifra encima de la barra
 
     @property
     def total(self) -> Decimal:
@@ -111,8 +112,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
     barras = [
         _Barra(
             "Reembolsar el fondo",
-            f"{euros(reembolso.retencion)} de retención al vender + "
-            f"{euros(reembolso.regularizacion_renta)} en la Renta",
+            f"{euros(reembolso.retencion)} de retención + {euros(reembolso.regularizacion_renta)} en la Renta",
             reembolso.retencion,
             reembolso.regularizacion_renta,
             cero,
@@ -120,79 +120,64 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         ),
         _Barra(
             "Traspasar a otro fondo",
-            "Sin impuesto ni retención hoy: tributa cuando reembolses",
+            "Sin impuesto ni retención hoy",
             cero,
             cero,
             traspaso.impuesto_latente,
-            f"0 € hoy<br>{euros(traspaso.impuesto_latente)} aplazados",
+            f"0 € hoy · {euros(traspaso.impuesto_latente)} aplazados",
         ),
         _Barra(
             "Vender el ETF",
-            f"Sin retención: {euros(etf.cuota)} en la Renta. No admite traspaso",
+            "Sin retención; no admite traspaso",
             cero,
             etf.cuota,
             cero,
             f"{euros(etf.cuota)} este año",
         ),
     ]
-    categorias = [barra.escenario for barra in barras]
+    # Escenario y, debajo, su detalle en gris, como etiqueta del eje.
+    categorias = [
+        f"<b>{barra.escenario}</b><br><span style='font-size:13px;color:{INFORME_TEXTO_SECUNDARIO}'>"
+        f"{barra.detalle}</span>"
+        for barra in barras
+    ]
 
     figura = go.Figure()
     for nombre, campo, color in [
-        ("Retención al vender", "retencion", COLOR_RETENCION),
-        ("Pago en la Renta", "en_renta", COLOR_RENTA),
-        ("Aplazado con el traspaso", "aplazado", COLOR_APLAZADO),
+        ("Retención al vender", "retencion", INFORME_RETENCION),
+        ("Pago en la Renta", "en_renta", INFORME_RENTA),
+        ("Aplazado con el traspaso", "aplazado", INFORME_APLAZADO),
     ]:
         figura.add_bar(
-            y=categorias,
-            x=[getattr(barra, campo) for barra in barras],
+            x=categorias,
+            y=[getattr(barra, campo) for barra in barras],
             name=nombre,
-            orientation="h",
-            width=_GROSOR_BARRA,
-            marker={"color": color, "line": {"color": FONDO, "width": 2}},
+            width=0.42,
+            marker={"color": color, "line": {"color": INFORME_FONDO, "width": 2}},
             hoverinfo="skip",
+        )
+    for categoria, barra in zip(categorias, barras):
+        figura.add_annotation(
+            x=categoria,
+            y=barra.total,
+            yshift=6,
+            yanchor="bottom",
+            showarrow=False,
+            text=barra.rotulo,
+            font={"size": 16, "color": INFORME_TEXTO},
         )
 
     maximo = max(barra.total for barra in barras)
-    for barra in barras:
-        # Escenario y detalle encima de cada barra; la cifra, al final.
-        figura.add_annotation(
-            x=0,
-            y=barra.escenario,
-            yshift=_MEDIA_BARRA_PX + 8,
-            xanchor="left",
-            yanchor="bottom",
-            align="left",
-            showarrow=False,
-            text=f"<b>{barra.escenario}</b><br><span style='color:{TEXTO_SECUNDARIO}'>{barra.detalle}</span>",
-            font={"size": 25, "color": TITULOS},
-        )
-        figura.add_annotation(
-            x=barra.total,
-            y=barra.escenario,
-            xshift=14,
-            xanchor="left",
-            align="left",
-            showarrow=False,
-            text=barra.rotulo,
-            font={"family": FUENTE_CIFRAS, "size": 25, "color": TEXTO},
-        )
-
-    # Cabecera y pie colocados en píxeles desde el borde superior de la imagen.
-    figura.add_shape(
-        type="line", xref="paper", yref="paper", x0=0, x1=1, y0=_y(56), y1=_y(56), line={"color": ACENTO, "width": 6}
-    )
     for desde_arriba, texto, fuente in [
-        (92, f"IRPF {normativa.EJERCICIO} · FONDO FRENTE A ETF", {"family": FUENTE_CIFRAS, "size": 22, "color": ACENTO}),
-        (134, "<b>Con un fondo puedes aplazar el impuesto.<br>Con un ETF, no.</b>", {"size": 46, "color": TITULOS}),
-        (284, descripcion_caso, {"size": 24, "color": TEXTO_SECUNDARIO}),
-        (ALTO - 80, PIE, {"size": 19, "color": TEXTO_SECUNDARIO}),
+        (18, "<b>Con un fondo puedes aplazar el impuesto. Con un ETF, no.</b>", {"size": 22, "color": INFORME_TEXTO}),
+        (52, descripcion_caso, {"size": 14, "color": INFORME_TEXTO_SECUNDARIO}),
+        (INFORME_ALTO - 26, PIE, {"size": 12, "color": INFORME_TEXTO_SECUNDARIO}),
     ]:
         figura.add_annotation(
             xref="paper",
             yref="paper",
-            x=0,
-            y=_y(desde_arriba),
+            x=-(90 - 24) / (INFORME_ANCHO - 90 - 40),  # a 24 px del borde izquierdo de la imagen
+            y=_y_informe(desde_arriba),
             xanchor="left",
             yanchor="top",
             align="left",
@@ -201,44 +186,51 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
             font=fuente,
         )
 
+    eje = {"showline": True, "linecolor": INFORME_EJES, "linewidth": 1, "ticks": "outside", "tickcolor": INFORME_EJES}
     figura.update_layout(
-        width=ANCHO,
-        height=ALTO,
+        width=INFORME_ANCHO,
+        height=INFORME_ALTO,
         barmode="stack",
-        barcornerradius=4,
         separators=",.",
-        paper_bgcolor=FONDO,
-        plot_bgcolor=FONDO,
-        font={"family": FUENTE, "color": TEXTO},
-        margin={"l": _MARGEN_LATERAL, "r": _MARGEN_LATERAL, "t": _MARGEN_SUPERIOR, "b": _MARGEN_INFERIOR},
+        paper_bgcolor=INFORME_FONDO,
+        plot_bgcolor=INFORME_FONDO,
+        font={"family": INFORME_FUENTE, "color": INFORME_TEXTO, "size": 14},
+        margin={"l": 90, "r": 40, "t": _INFORME_MARGEN_SUPERIOR, "b": _INFORME_MARGEN_INFERIOR},
         legend={
             "orientation": "h",
-            "x": 0,
-            "y": _y(372),
+            "x": 0.01,
+            "y": 1.0,
             "xanchor": "left",
             "yanchor": "top",
-            "font": {"size": 21, "color": TEXTO},
+            "bgcolor": "rgba(0,0,0,0)",
+            "font": {"size": 14, "color": INFORME_TEXTO},
             "traceorder": "normal",
         },
-        xaxis={
-            "range": [0, maximo * Decimal("1.55")],  # deja sitio a la cifra del final de cada barra
-            "ticksuffix": " €",
-            "tickformat": ",d",
-            "tickfont": {"family": FUENTE_CIFRAS, "size": 18, "color": TEXTO_SECUNDARIO},
-            "gridcolor": REJILLA,
-            "zeroline": True,
-            "zerolinecolor": "#2d2d32",
-            "showline": False,
-        },
+        xaxis={**eje, "tickfont": {"size": 15, "color": INFORME_TEXTO}},
         yaxis={
-            "categoryorder": "array",
-            "categoryarray": categorias,
-            "autorange": "reversed",
-            "showticklabels": False,
-            "showgrid": False,
+            **eje,
+            "title": {"text": f"Impuesto en el IRPF {normativa.EJERCICIO} (€)", "font": {"size": 14}},
+            "range": [0, maximo * Decimal("1.4")],  # aire para la leyenda y las cifras
+            "tickformat": ",d",
+            "ticksuffix": " €",
+            "tickfont": {"size": 13, "color": INFORME_TEXTO_SECUNDARIO},
+            "gridcolor": INFORME_REJILLA,
+            "zeroline": False,
         },
     )
     return figura
+
+
+# Geometría del informe (px). El área del gráfico va de _INFORME_MARGEN_SUPERIOR a
+# INFORME_ALTO − _INFORME_MARGEN_INFERIOR.
+_INFORME_MARGEN_SUPERIOR = 100
+_INFORME_MARGEN_INFERIOR = 110
+
+
+def _y_informe(desde_arriba_px: float) -> float:
+    """Convierte una distancia en píxeles desde el borde superior a coordenada `paper` de Plotly."""
+    alto_grafico = INFORME_ALTO - _INFORME_MARGEN_SUPERIOR - _INFORME_MARGEN_INFERIOR
+    return 1 - (desde_arriba_px - _INFORME_MARGEN_SUPERIOR) / alto_grafico
 
 
 # --- Gráficos de la app ----------------------------------------------------------------------------
@@ -377,7 +369,7 @@ def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
 # --- Casos de los posts ---------------------------------------------------------------------------
 
 DESCRIPCION_CASO_B = (
-    "Inversión de 20.000 € que hoy vale 30.000 € (ganancia de 10.000 €),<br>"
+    "Inversión de 20.000 € que hoy vale 30.000 € (ganancia de 10.000 €), "
     f"sin otras rentas del ahorro. Ejercicio {normativa.EJERCICIO}."
 )
 
@@ -393,7 +385,7 @@ def main() -> None:
     carpeta = Path(__file__).resolve().parent.parent / "contenido" / "2026-10-17-fondo-vs-etf"
     carpeta.mkdir(parents=True, exist_ok=True)
     figura = figura_fondo_frente_a_etf(caso_b(), DESCRIPCION_CASO_B)
-    figura.write_image(carpeta / "grafico.png", width=ANCHO, height=ALTO)
+    figura.write_image(carpeta / "grafico.png", width=INFORME_ANCHO, height=INFORME_ALTO, scale=INFORME_ESCALA)
 
 
 if __name__ == "__main__":
