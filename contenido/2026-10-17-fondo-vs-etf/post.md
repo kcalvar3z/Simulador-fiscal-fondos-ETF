@@ -1,9 +1,10 @@
-Con la incertidumbre actual, muchos se plantean vender sus inversiones. Antes, conviene saber qué pasa en el IRPF según tengas un fondo o un ETF.
+Con la gran incertidumbre del mercado actual, muchos se plantean salir de sus posiciones y liquidar. Sin embargo, pocos conocen de verdad sus consecuencias fiscales.
 
-Lo he calculado con un simulador propio. Caso: 20.000 € invertidos que hoy valen 30.000 €, sin otras rentas del ahorro, en 2026.
+Para resolverlo he desarrollado un simulador propio. Introduces tus fondos o ETF (cuánto invertiste, cuándo y cuánto valen hoy) y compara qué pagarías en el IRPF de 2026 si reembolsas, traspasas o vendes: cuota por tramos, retención, compensación de pérdidas e impuesto aplazado.
 
-– Reembolsar el fondo: 1.980 € de IRPF (los primeros 6.000 € al 19 % y el resto al 21 %). La gestora retiene 1.900 € al vender y los 80 € restantes se pagan en la Renta.
-– Vender el ETF: los mismos 1.980 €, pero sin retención: todo se paga en la declaración.
+Un ejemplo, sin otras rentas del ahorro: 20.000 € que hoy valen 30.000 €.
+– Reembolsar el fondo: 1.980 € de IRPF. La gestora retiene 1.900 € y los 80 € restantes se pagan en la Renta.
+– Vender el ETF: los mismos 1.980 €, sin retención: todo se paga en la declaración.
 – Traspasar el fondo a otro (por ejemplo, un monetario): 0 € hoy. Los 1.980 € quedan aplazados.
 
 ¿Por qué?
@@ -11,7 +12,7 @@ Lo he calculado con un simulador propio. Caso: 20.000 € invertidos que hoy val
 • Los ETF quedan fuera de ese régimen; los extranjeros, también desde 2022, salvo un régimen transitorio para algunos comprados antes.
 • La retención del 19 % es un pago a cuenta, no un impuesto extra: se descuenta en la Renta.
 
-La consecuencia: si tienes fondos, existe la opción de reducir riesgo sin tributar ahora. Con un ETF, cualquier cambio de posición tributa en el ejercicio. Eso sí, diferir no es no pagar: el impuesto llega al reembolsar.
+Si tienes fondos, existe la opción de reducir riesgo sin tributar ahora. Eso sí, diferir no es no pagar.
 
 ¿Conocías esta diferencia? Te leo en comentarios.
 

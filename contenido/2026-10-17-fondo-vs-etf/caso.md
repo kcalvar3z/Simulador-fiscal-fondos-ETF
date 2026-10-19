@@ -17,7 +17,7 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 | Ganancia | 10.000 € | 10.000 € (diferida) | 10.000 € |
 | Cuota de IRPF en 2026 | 6.000 × 19 % + 4.000 × 21 % = 1.980 € | 0 € | 1.980 € |
 | Retención al vender | 19 % × 10.000 = 1.900 € | 0 € | 0 € |
-| Pago en la Renta | 1.980 − 1.900 = 80 € | 0 € | 1.980 € |
+| A ingresar en la Renta | 1.980 − 1.900 = 80 € | 0 € | 1.980 € |
 | Impuesto aplazado | — | 1.980 € | — |
 
 ## Normativa citada
