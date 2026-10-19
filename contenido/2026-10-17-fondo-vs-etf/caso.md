@@ -22,6 +22,7 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 
 ## Normativa citada
 
+- La revalorización no tributa mientras no se vende: la ganancia patrimonial se imputa al ejercicio de la alteración patrimonial (arts. 14.1.c y 33.1 LIRPF). Los dividendos de fondos o ETF de distribución son rendimientos del capital mobiliario del año en que se cobran (arts. 14.1.a y 25.1.a LIRPF). Excepción no mencionada en el post: los fondos domiciliados en paraísos fiscales imputan cada año la revalorización (art. 95 LIRPF).
 - Traspaso sin tributar y exclusión de los ETF: art. 94.1.a y 94.2.a LIRPF (ETF extranjeros desde el 1-1-2022, Ley 11/2021).
 - Régimen transitorio para ETF extranjeros adquiridos antes del 1-1-2022 y no cotizados en bolsa española: DT 36.ª LIRPF (solo se menciona; el simulador no lo calcula).
 - Retención del 19 % en el reembolso: art. 101.6 LIRPF; sin retención en la venta de ETF: art. 75.3.j RIRPF.
