@@ -1,6 +1,6 @@
 Con la gran incertidumbre del mercado actual, muchos se plantean salir de sus posiciones y liquidar. Sin embargo, pocos conocen de verdad sus consecuencias fiscales.
 
-Para resolverlo he desarrollado un simulador propio. Introduces tus fondos o ETF (cuánto invertiste, cuándo y cuánto valen hoy) y compara qué pagarías en el IRPF de 2026 si reembolsas, traspasas o vendes.
+Para resolverlo he desarrollado un simulador propio. Introduces tus fondos o ETF (cuánto invertiste, cuándo y cuánto valen hoy) y compara qué pagarías en el IRPF de 2026 si reembolsas, traspasas o vendes. Puedes probarlo aquí: https://simulador-fiscal-fondos-etf.streamlit.app/
 
 Un ejemplo, sin otras rentas del ahorro: 20.000 € que hoy valen 30.000 €.
 – Reembolsar el fondo: 1.980 € de IRPF. La gestora retiene 1.900 € y los 80 € restantes se pagan en la Renta.
