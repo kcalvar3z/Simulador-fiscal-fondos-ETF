@@ -2,6 +2,8 @@
 
 Calcula y compara el coste en el IRPF de deshacer una inversión de tres formas: **reembolsar un fondo**, **traspasarlo a otro fondo** o **vender un ETF**. Residentes en territorio común, ejercicio 2026.
 
+**Pruébalo en la web:** [simulador-fiscal-fondos-etf.streamlit.app](https://simulador-fiscal-fondos-etf.streamlit.app/)
+
 > Cálculo orientativo con fines divulgativos. No constituye asesoramiento fiscal ni financiero.
 
 ## El problema
@@ -27,7 +29,7 @@ Cuota: 6.000 € al 19 % + 4.000 € al 21 % (escala progresiva del ahorro).
 
 ## La aplicación
 
-Una app web en Streamlit pensada para cualquier inversor, sin conocimientos técnicos:
+[Abrir la app](https://simulador-fiscal-fondos-etf.streamlit.app/). Una app web en Streamlit pensada para cualquier inversor, sin conocimientos técnicos:
 
 - **Entrada guiada por inversión**: qué es (fondo o ETF), cuánto invertiste, cuándo, cuánto vale hoy y qué parte vendes. Para quien tenga varias compras, un modo detallado aplica el método FIFO.
 - **Varias inversiones a la vez**: una operación por producto (reembolsar, traspasar o vender) y dos planes de referencia para comparar: «reembolsar o vender todo» y «traspasar los fondos».
