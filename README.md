@@ -122,3 +122,5 @@ Con Claude Code como asistente de programación, bajo reglas explícitas del pro
 ## Autor
 
 Kike Álvarez, estudiante de último curso del Doble Grado en Derecho y ADE en la Universidade da Coruña, orientado a la fiscalidad patrimonial.
+
+[LinkedIn](https://www.linkedin.com/in/enriquealvarezcosmea)
