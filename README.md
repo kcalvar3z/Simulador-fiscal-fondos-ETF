@@ -109,11 +109,11 @@ python -m simulador.graficos
 - Supone un contribuyente con un salario estándar, cuya base general absorbe el mínimo personal y familiar (art. 66.1.2.º LIRPF).
 - Cada producto está en una sola entidad comercializadora (art. 97.2 RIRPF).
 - La regla de recompra y el régimen transitorio de ETF extranjeros solo se avisan, no se calculan.
-- Puntos pendientes de verificación, marcados en el código con `# VERIFICAR`: la escala del ahorro frente al Manual de Renta 2026, el alcance del régimen transitorio y el plazo de recompra en fondos no cotizados.
+
 
 ## Cómo se ha desarrollado
 
-Con Claude Code como asistente de programación, bajo reglas explícitas del proyecto ([`CLAUDE.md`](CLAUDE.md)): ninguna norma sin artículo y fuente, todo cálculo con un caso resuelto a mano, commits pequeños y una revisión documentada antes de cada integración ([`.claude/skills/`](.claude/skills/)). Las decisiones fiscales y su verificación son del autor.
+De manera individual y con Claude Code como asistente de programación, bajo reglas explícitas del proyecto ([`CLAUDE.md`](CLAUDE.md)): ninguna norma sin artículo y fuente, todo cálculo con un caso resuelto a mano, commits pequeños y una revisión documentada antes de cada integración ([`.claude/skills/`](.claude/skills/)). Las decisiones fiscales y su verificación son del autor.
 
 ## Licencia
 
