@@ -115,6 +115,12 @@ python -m simulador.graficos
 
 Con Claude Code como asistente de programación, bajo reglas explícitas del proyecto ([`CLAUDE.md`](CLAUDE.md)): ninguna norma sin artículo y fuente, todo cálculo con un caso resuelto a mano, commits pequeños y una revisión documentada antes de cada integración ([`.claude/skills/`](.claude/skills/)). Las decisiones fiscales y su verificación son del autor.
 
+## Licencia
+
+[MIT](LICENSE). El código se puede reutilizar citando al autor y se ofrece sin garantía de ningún tipo; los resultados no sustituyen el asesoramiento de un profesional.
+
 ## Autor
 
 Kike Álvarez, estudiante de último curso del Doble Grado en Derecho y ADE en la Universidade da Coruña, orientado a la fiscalidad patrimonial.
+
+[LinkedIn](https://www.linkedin.com/in/enriquealvarezcosmea)
