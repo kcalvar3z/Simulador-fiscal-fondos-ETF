@@ -17,11 +17,12 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 | Ganancia | 10.000 € | 10.000 € (diferida) | 10.000 € |
 | Cuota de IRPF en 2026 | 6.000 × 19 % + 4.000 × 21 % = 1.980 € | 0 € | 1.980 € |
 | Retención al vender | 19 % × 10.000 = 1.900 € | 0 € | 0 € |
-| Pago en la Renta | 1.980 − 1.900 = 80 € | 0 € | 1.980 € |
+| A ingresar en la Renta | 1.980 − 1.900 = 80 € | 0 € | 1.980 € |
 | Impuesto aplazado | — | 1.980 € | — |
 
 ## Normativa citada
 
+- La revalorización no tributa mientras no se vende: la ganancia patrimonial se imputa al ejercicio de la alteración patrimonial (arts. 14.1.c y 33.1 LIRPF). Los dividendos de fondos o ETF de distribución son rendimientos del capital mobiliario del año en que se cobran (arts. 14.1.a y 25.1.a LIRPF). Excepción no mencionada en el post: los fondos domiciliados en paraísos fiscales imputan cada año la revalorización (art. 95 LIRPF).
 - Traspaso sin tributar y exclusión de los ETF: art. 94.1.a y 94.2.a LIRPF (ETF extranjeros desde el 1-1-2022, Ley 11/2021).
 - Régimen transitorio para ETF extranjeros adquiridos antes del 1-1-2022 y no cotizados en bolsa española: DT 36.ª LIRPF (solo se menciona; el simulador no lo calcula).
 - Retención del 19 % en el reembolso: art. 101.6 LIRPF; sin retención en la venta de ETF: art. 75.3.j RIRPF.
