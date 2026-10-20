@@ -10,9 +10,13 @@ from simulador.graficos import (
     PIE,
     caso_b,
     euros,
+    figura_caso_a,
+    figura_caso_i,
     figura_fondo_frente_a_etf,
+    figura_planes,
     figura_rentabilidad,
     pasos_cascada,
+    texto_compensacion,
     texto_diferimiento,
 )
 from simulador.lotes import Lote, TipoProducto, Venta
@@ -53,6 +57,55 @@ def test_figura_rechaza_una_venta_con_perdida():
     venta = Venta(date(2026, 10, 16), D("1000"), D("18"))
     with pytest.raises(ValueError, match="ganancia"):
         figura_fondo_frente_a_etf(comparar_escenarios(lotes, venta), "Caso con pérdida")
+
+
+def series_de(figura) -> dict[str, list]:
+    return {traza.name: list(traza.y) for traza in figura.data}
+
+
+def test_figura_caso_i_dibuja_rayada_la_retencion_que_se_devuelve():
+    figura = figura_caso_i()
+
+    # Reembolsar A y B: de los 1.900 € retenidos quedan 1.140 € de cuota y se devuelven 760 €.
+    assert series_de(figura) == {
+        "Retención al vender (pago a cuenta)": [D("1140"), D("1900"), D("0")],
+        "A ingresar en la declaración de la Renta": [D("0"), D("80"), D("0")],
+        "Retención que se devuelve en la Renta": [D("760"), D("0"), D("0")],
+    }
+    textos = [anotacion.text for anotacion in figura.layout.annotations]
+    assert {"1.140 € este año", "1.980 € este año", "0 € este año"} <= set(textos)
+    assert texto_compensacion(D("10000"), D("4000"), D("1900"), D("760")) in textos
+    assert "10.000 € − 4.000 € = 6.000 €" in texto_compensacion(D("10000"), D("4000"), D("1900"), D("760"))
+
+
+def test_figura_caso_a_desglosa_la_cuota_por_tramos():
+    figura = figura_caso_a()
+
+    assert series_de(figura) == {
+        "Retención al vender (pago a cuenta)": [D("11400"), D("0"), D("0")],
+        "A ingresar en la declaración de la Renta": [D("1280"), D("0"), D("12680")],
+    }
+    panel = next(anotacion.text for anotacion in figura.layout.annotations if "progresiva" in anotacion.text)
+    for linea in [
+        "6.000 € al 19 %: 1.140 €",
+        "44.000 € al 21 %: 9.240 €",
+        "10.000 € al 23 %: 2.300 €",
+        "Total: 12.680 €",
+        "Los 1.280 € restantes",
+        "12.680 € quedan aplazados",
+    ]:
+        assert linea in panel
+
+
+def test_figura_planes_rechaza_una_cuota_negativa():
+    # Caso G: la pérdida ahorra 190 € de impuesto sobre los intereses.
+    plan = simular_plan(
+        [posicion("B", "20", "18")],
+        {"B": Escenario.REEMBOLSO_FONDO},
+        OtrasRentasAhorro(saldo_rendimientos=D("4000")),
+    )
+    with pytest.raises(ValueError, match="cuota"):
+        figura_planes([("Reembolsar B", plan)], "Caso G", "Título", "Panel")
 
 
 # Gráficos de la app

@@ -1,12 +1,12 @@
 # Caso del post: fondo frente a ETF (17-10-2026)
 
-Ficheros: `post.md` (texto para copiar), `comentario.md` (primer comentario, con el enlace a la app) y `grafico.png` (escenario 1; apaisado, 1200×600 exportado a 2400×1200 px).
+Ficheros: `post.md` (texto para copiar), `comentario.md` (primer comentario, con el enlace a la app) y un gráfico por escenario, en el orden en que se suben a LinkedIn: `grafico-1-fondo-etf.png`, `grafico-2-compensacion.png` y `grafico-3-tramos.png` (apaisados, 1200×600 exportados a 2400×1200 px).
 
 Supuestos comunes: compras el 15-1-2023 y venta o traspaso el 16-10-2026, sin comisiones, sin otras rentas del ahorro ni saldos pendientes. IRPF 2026, territorio común. Cifras obtenidas con `simulador.escenarios.simular_plan`.
 
 ## Escenario 1: una inversión que gana 10.000 €
 
-Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulador/graficos.py` (`caso_b`): 1.000 participaciones compradas a 20 € (20.000 €) que hoy valen 30 € (30.000 €).
+Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulador/graficos.py` (`caso_b`). Gráfico: `grafico-1-fondo-etf.png`. 1.000 participaciones compradas a 20 € (20.000 €) que hoy valen 30 € (30.000 €).
 
 | | Reembolso del fondo | Traspaso | Venta del ETF |
 |---|---|---|---|
@@ -18,21 +18,21 @@ Caso B de `.claude/skills/calculo-plusvalias/examples.md`, definido en `simulado
 
 ## Escenario 2: un fondo gana 10.000 € y otro pierde 4.000 €
 
-Caso I de `examples.md`. Fondo A: 20.000 € que hoy valen 30.000 €. Fondo B: 20.000 € que hoy valen 16.000 €.
+Caso I de `examples.md` (`caso_i`). Gráfico: `grafico-2-compensacion.png`. Fondo A: 20.000 € que hoy valen 30.000 €. Fondo B: 20.000 € que hoy valen 16.000 €.
 
-| | Reembolsar los dos | Reembolsar A y traspasar B |
-|---|---|---|
-| Base del ahorro | 10.000 − 4.000 = 6.000 € | 10.000 € |
-| Cuota de IRPF en 2026 | 6.000 × 19 % = 1.140 € | 1.980 € |
-| Retención (fondo a fondo; solo A tiene ganancia) | 1.900 € | 1.900 € |
-| Efecto en la Renta | 1.140 − 1.900 = −760 € (a devolver) | 80 € |
-| Impuesto aplazado | — | 1.140 − 1.980 = −840 € (la pérdida de B se aplaza) |
+| | Reembolsar los dos | Reembolsar A y traspasar B | Traspasar los dos |
+|---|---|---|---|
+| Base del ahorro | 10.000 − 4.000 = 6.000 € | 10.000 € | 0 € |
+| Cuota de IRPF en 2026 | 6.000 × 19 % = 1.140 € | 1.980 € | 0 € |
+| Retención (fondo a fondo; solo A tiene ganancia) | 1.900 € | 1.900 € | 0 € |
+| Efecto en la Renta | 1.140 − 1.900 = −760 € (a devolver) | 80 € | 0 € |
+| Impuesto aplazado | — | 1.140 − 1.980 = −840 € (la pérdida de B se aplaza) | 1.140 € |
 
 Si fueran ETF y se vendieran los dos: cuota de 1.140 €, sin retención, toda en la Renta.
 
 ## Escenario 3: una inversión que gana 60.000 €
 
-Base del ahorro de 60.000 € (caso A de `examples.md`): 40.000 € que hoy valen 100.000 €.
+Base del ahorro de 60.000 € (caso A de `examples.md`, `caso_a`): 40.000 € que hoy valen 100.000 €. Gráfico: `grafico-3-tramos.png`.
 
 | | Reembolso del fondo | Traspaso | Venta del ETF |
 |---|---|---|---|
@@ -50,7 +50,7 @@ Base del ahorro de 60.000 € (caso A de `examples.md`): 40.000 € que hoy vale
 - Compensación de la pérdida con la ganancia del mismo ejercicio: art. 49.1.b LIRPF.
 - Escala del ahorro: arts. 66 y 76 LIRPF.
 
-## Regenerar el gráfico
+## Regenerar los gráficos
 
 ```bash
 plotly_get_chrome            # una sola vez: Chrome para exportar a PNG
