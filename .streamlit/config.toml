@@ -1,43 +1,65 @@
-# Tema de la app: estética de terminal financiera. Fondo casi negro, ámbar como color
-# principal, cian de acento y cifras en tipografía monoespaciada.
+# Tema de la app: estilo de informe de despacho, con modo claro y modo oscuro.
+#
+# Para retocarlo: cambia un valor, guarda y recarga la app (con `streamlit run app.py`
+# en marcha basta con recargar la página). Por defecto la app sigue el modo del sistema
+# del visitante; se puede cambiar a mano en el menú ⋮ → Settings.
+#
+# - [theme]: lo común a los dos modos (tipografías, esquinas).
+# - [theme.light] y [theme.dark]: los colores de cada modo.
+# Los colores de las series de los gráficos están en simulador/graficos.py (COLOR_*).
 
 [theme]
-base = "dark"
-primaryColor = "#f5aa20"
-backgroundColor = "#0a0a0a"
-secondaryBackgroundColor = "#16161a"
-textColor = "#e8e8ed"
-linkColor = "#66abff"
-grayTextColor = "#a0a0a8"
-borderColor = "#2d2d32"
-showWidgetBorder = true
-baseRadius = "4px"
-
-# Avisos: azul oscuro para la información y ámbar para las advertencias.
-blueColor = "#0062dd"
-blueBackgroundColor = "#0b1a2e"
-blueTextColor = "#cfe6ff"
-yellowColor = "#f5aa20"
-yellowBackgroundColor = "#2a1d05"
-yellowTextColor = "#ffd27a"
-
-# Tablas.
-dataframeBorderColor = "#2d2d32"
-dataframeHeaderBackgroundColor = "#16161a"
-dataframeHeaderTextColor = "#f5aa20"
-
-# Tipografías libres (Google Fonts) con alternativas del sistema.
-font = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
-codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap, monospace"
+# Texto: Public Sans, sobria y muy legible. Títulos: Source Serif 4, con serifa, de informe.
+font = "'Public Sans':https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
+headingFont = "'Source Serif 4':https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap, Georgia, serif"
 headingFontWeights = 600
+metricValueFontSize = "1.9rem"
+metricValueFontWeight = 600
+baseRadius = "3px"
+showWidgetBorder = true
 
-# Colores para los gráficos: ámbar, cian y azul.
-chartCategoricalColors = ["#f5aa20", "#00bcd4", "#0062dd", "#ffcc1d", "#a0a0a8"]
+[theme.light]
+base = "light"
+primaryColor = "#1f3a5f"              # azul marino: botones, deslizadores, selección
+backgroundColor = "#fbfaf7"           # marfil, como el papel
+secondaryBackgroundColor = "#f1efea"  # fondo de los campos y de las cabeceras de tabla
+textColor = "#1d1d1f"
+grayTextColor = "#5f6368"
+borderColor = "#dcd8cf"
+linkColor = "#1f3a5f"
+blueColor = "#1f3a5f"                 # avisos informativos
+blueBackgroundColor = "#eef2f7"
+blueTextColor = "#1f3a5f"
+yellowColor = "#9a5b00"               # advertencias
+yellowBackgroundColor = "#fbf3e4"
+yellowTextColor = "#6b4300"
+dataframeBorderColor = "#dcd8cf"
+dataframeHeaderBackgroundColor = "#f1efea"
+dataframeHeaderTextColor = "#1d1d1f"
+
+[theme.dark]
+base = "dark"
+primaryColor = "#8fb0d9"              # el mismo azul, aclarado para que se lea sobre oscuro
+backgroundColor = "#16181c"
+secondaryBackgroundColor = "#1f2227"
+textColor = "#e6e4df"
+grayTextColor = "#a3a29d"
+borderColor = "#33363c"
+linkColor = "#8fb0d9"
+blueColor = "#8fb0d9"
+blueBackgroundColor = "#1b2533"
+blueTextColor = "#c9d9ee"
+yellowColor = "#d6a24a"
+yellowBackgroundColor = "#2b2414"
+yellowTextColor = "#e8c98a"
+dataframeBorderColor = "#33363c"
+dataframeHeaderBackgroundColor = "#1f2227"
+dataframeHeaderTextColor = "#e6e4df"
 
 [browser]
 # Sin estadísticas de uso de Streamlit: coherente con el aviso de privacidad de la app.
 gatherUsageStats = false
 
 [client]
-# Oculta el botón «Deploy» y deja solo el menú mínimo.
-toolbarMode = "minimal"
+# Oculta las opciones de desarrollador, pero deja el menú con el cambio de modo claro/oscuro.
+toolbarMode = "viewer"

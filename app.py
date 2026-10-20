@@ -366,16 +366,11 @@ def tabla_saldos_pendientes(planes: list[PlanMostrado]) -> pd.DataFrame | None:
     )
 
 
-def paso(etiqueta: str, titulo: str) -> None:
-    st.markdown(f'<div class="etiqueta">{etiqueta}</div>', unsafe_allow_html=True)
-    st.subheader(titulo)
-
-
 def mostrar_tarjetas(planes: list[PlanMostrado]) -> None:
     """Una tarjeta por plan con la cuota en grande y el resto de cifras debajo."""
     for columna, plan in zip(st.columns(len(planes)), planes):
         with columna.container(border=True):
-            st.markdown(f'<div class="etiqueta">{plan.titulo}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="titulo-plan">{plan.titulo}</div>', unsafe_allow_html=True)
             r = plan.resultado
             if r is None:
                 st.metric(f"Cuota de IRPF en {normativa.EJERCICIO}", NO_DISPONIBLE)
@@ -395,7 +390,7 @@ def mostrar_tarjetas(planes: list[PlanMostrado]) -> None:
 
 
 def mostrar_resultados(posiciones: list[Posicion], planes: list[PlanMostrado]) -> None:
-    paso("03 · Resultado", "Lo que pagas en cada caso")
+    st.subheader("Lo que pagas en cada caso")
     mostrar_tarjetas(planes)
     st.markdown(mensaje_clave(posiciones, planes))
 
@@ -461,7 +456,7 @@ def nota_plan(plan: ResultadoPlan) -> str:
 
 
 def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]) -> None:
-    paso("04 · Visualización", "Tus inversiones, de un vistazo")
+    st.subheader("Tus inversiones, de un vistazo")
 
     st.markdown("**Rentabilidad de tus inversiones**")
     filas = [(p.nombre, rentabilidad(p.lotes, p.venta.precio_unitario, p.venta.fecha)) for p in posiciones]
@@ -495,39 +490,35 @@ def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]
 
 # --- Página ---------------------------------------------------------------------------------------
 
+# Sin colores fijos: bordes y textos secundarios salen del color del texto del tema activo
+# (currentColor), así que sirven igual en modo claro y oscuro. Los colores están en
+# .streamlit/config.toml.
 ESTILOS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 .cabecera {
-    border-top: 4px solid;
-    border-image: linear-gradient(90deg, #ca7c18 0%, #f5aa20 50%, #ffc51e 75%, #ffcc1d 100%) 1;
-    padding: 1.5rem 0 0.75rem;
+    padding: 0.5rem 0 1.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
 }
-.cabecera h1 { color: #ffffff; font-size: 2.4rem; margin: 0.35rem 0 0.25rem; padding: 0; }
-.cabecera p { color: #a0a0a8; margin: 0; }
-.etiqueta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.8rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #f5aa20;
-}
-h2, h3, h4 { color: #ffffff; }
-[data-testid="stMetricValue"] { font-family: 'IBM Plex Mono', monospace; color: #f5aa20; }
+.cabecera .contexto { font-size: 0.9rem; opacity: 0.7; }
+.cabecera h1 { font-size: 2.4rem; line-height: 1.15; margin: 0.4rem 0 0.5rem; padding: 0; }
+.cabecera p { opacity: 0.8; margin: 0; max-width: 46rem; }
+.titulo-plan { font-weight: 600; margin-bottom: 0.25rem; }
+[data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
 .cifras .fila {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
     padding: 0.4rem 0;
-    border-top: 1px solid #2d2d32;
+    border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
 }
-.cifras .cifra { font-family: 'IBM Plex Mono', monospace; color: #e8e8ed; white-space: nowrap; }
+.cifras .cifra { font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
 """
 
 CABECERA = f"""
 <div class="cabecera">
-  <div class="etiqueta">IRPF {normativa.EJERCICIO} · Territorio común · Simulador divulgativo</div>
+  <div class="contexto">IRPF {normativa.EJERCICIO} · Territorio común · Simulador divulgativo</div>
   <h1>Vender un fondo o un ETF: qué pagas en el IRPF</h1>
   <p>Introduce tus inversiones y compara reembolsar, traspasar o vender. {PRIVACIDAD}</p>
 </div>
@@ -653,14 +644,14 @@ def main() -> None:
 
     izquierda, derecha = st.columns([3, 2], gap="large")
     with izquierda:
-        paso("01", "Tus inversiones")
+        st.subheader("Tus inversiones")
         ids = _ids_productos()
         datos = [tarjeta_producto(id_producto, n, len(ids) > 1) for n, id_producto in enumerate(ids, start=1)]
         st.button("+ Añadir otro fondo o ETF", key="anadir", on_click=_anadir_producto)
 
     with derecha:
-        paso("02 · Opcional", f"Tu situación en {normativa.EJERCICIO}")
-        st.caption("Si no lo sabes, déjalo como está: el cálculo supone que no tienes otras rentas del ahorro.")
+        st.subheader(f"Tu situación en {normativa.EJERCICIO}")
+        st.caption("Opcional. Si no lo sabes, déjalo como está: el cálculo supone que no tienes otras rentas del ahorro.")
         fecha_venta = st.date_input(
             "Fecha de la venta",
             value=fecha_venta_por_defecto(),

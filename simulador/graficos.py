@@ -28,20 +28,15 @@ from simulador.escenarios import (
 from simulador.lotes import Lote, TipoProducto, Venta
 from simulador.rentabilidad import Rentabilidad
 
-# Estética de la app (terminal financiera). Los colores de las series están validados con la
-# skill dataviz en modo oscuro sobre FONDO: banda de luminosidad, croma, separación con
-# daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
-FONDO = "#0a0a0a"
-TITULOS = "#ffffff"
-TEXTO = "#e8e8ed"
-TEXTO_SECUNDARIO = "#a0a0a8"
-ACENTO = "#f5aa20"
-REJILLA = "#1f1f24"
-COLOR_RETENCION = "#ca7c18"
-COLOR_RENTA = "#00a0b4"
-COLOR_APLAZADO = "#5b6ee8"
-FUENTE = "IBM Plex Sans, Liberation Sans, Arial, sans-serif"
-FUENTE_CIFRAS = "IBM Plex Mono, DejaVu Sans Mono, monospace"
+# Estética de los gráficos de la app. El fondo, el texto y la rejilla los pone Streamlit según
+# el modo claro u oscuro del visitante; aquí solo van los colores de las series, validados
+# con la skill dataviz en los dos modos (fondos #fbfaf7 y #16181c, todas las parejas):
+# banda de luminosidad, croma, separación con daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
+COLOR_RETENCION = "#c8553d"  # teja: impuestos
+COLOR_RENTA = "#2a9d8f"  # verde azulado: ganancias y valor actual
+COLOR_APLAZADO = "#3d6fb0"  # azul: totales y lo invertido
+COLOR_CONECTORES = "rgba(128, 128, 128, 0.5)"  # gris semitransparente: se ve en los dos modos
+FUENTE = "Public Sans, Helvetica, Arial, sans-serif"
 
 # Estética del gráfico de LinkedIn: informe analítico sobre blanco, apaisado. Colores validados
 # con la skill dataviz en modo claro sobre blanco (todas las parejas, sin avisos).
@@ -396,13 +391,13 @@ def _y_informe(desde_arriba_px: float) -> float:
 
 
 def _estilo_app(figura: go.Figure, alto: int) -> go.Figure:
-    """Fondo transparente y tipografía de la app; los colores de texto son los del tema oscuro."""
+    """Fondo transparente y tipografía de la app; los colores de texto y rejilla, los del tema activo."""
     figura.update_layout(
         height=alto,
         separators=",.",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": FUENTE, "color": TEXTO, "size": 14},
+        font={"family": FUENTE, "size": 14},
         margin={"l": 10, "r": 10, "t": 40, "b": 10},
         legend={"orientation": "h", "x": 0, "y": 1.02, "xanchor": "left", "yanchor": "bottom"},
         hoverlabel={"font": {"family": FUENTE}},
@@ -424,7 +419,7 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             x=importes,
             name=serie,
             orientation="h",
-            marker={"color": color, "line": {"color": FONDO, "width": 2}},
+            marker={"color": color},
             customdata=[euros(importe) for importe in importes],
             hovertemplate="%{y}<br>" + serie + ": %{customdata}<extra></extra>",
         )
@@ -438,7 +433,7 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             xanchor="left",
             showarrow=False,
             text=f"{euros_con_signo(r.ganancia)} · {porcentaje(r.total)} · {anual}",
-            font={"family": FUENTE_CIFRAS, "size": 14, "color": TEXTO},
+            font={"size": 14},
         )
     figura.update_layout(
         barmode="group",
@@ -449,11 +444,8 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             "range": [0, maximo * Decimal("1.7")],  # sitio para la rentabilidad
             "ticksuffix": " €",
             "tickformat": ",d",
-            "gridcolor": REJILLA,
-            "zerolinecolor": "#2d2d32",
-            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
         },
-        yaxis={"autorange": "reversed", "tickfont": {"size": 15, "color": TEXTO}},
+        yaxis={"autorange": "reversed", "tickfont": {"size": 15}},
     )
     return _estilo_app(figura, alto=110 + 95 * len(filas))
 
@@ -502,11 +494,10 @@ def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
             measure=["total" if paso.total else "relative" for paso in pasos],
             text=[euros(paso.importe) if paso.total else euros_con_signo(paso.importe) for paso in pasos],
             textposition="outside",
-            textfont={"family": FUENTE_CIFRAS, "color": TEXTO},
             increasing={"marker": {"color": COLOR_RENTA}},
             decreasing={"marker": {"color": COLOR_RETENCION}},
             totals={"marker": {"color": COLOR_APLAZADO}},
-            connector={"line": {"color": "#2d2d32", "width": 1}},
+            connector={"line": {"color": COLOR_CONECTORES, "width": 1}},
             hovertemplate="%{x}: %{text}<extra></extra>",
         )
     )
@@ -515,11 +506,8 @@ def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
         yaxis={
             "ticksuffix": " €",
             "tickformat": ",d",
-            "gridcolor": REJILLA,
-            "zerolinecolor": "#2d2d32",
-            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
         },
-        xaxis={"tickfont": {"size": 13, "color": TEXTO}},
+        xaxis={"tickfont": {"size": 13}},
     )
     figura.update_yaxes(rangemode="tozero")
     return _estilo_app(figura, alto=440)
