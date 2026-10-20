@@ -37,6 +37,7 @@ Cuota: 6.000 € al 19 % + 4.000 € al 21 % (escala progresiva del ahorro).
 - **Resultado** con la cuota, la retención, el efecto en la Renta, el impuesto latente del traspaso, los saldos que se arrastran o caducan y avisos (regla de recompra, régimen transitorio de ETF).
 - **Visualización**: rentabilidad de cada inversión (total y anual) y una cascada de la ganancia al neto tras el IRPF, con el impuesto desglosado por tramos y el ahorro por compensaciones.
 - **Privacidad**: no guarda datos; solo existen mientras la página está abierta.
+- **Modo claro y oscuro**: sigue la preferencia del sistema y se puede cambiar en el menú ⋮ → Settings.
 
 ![Entrada de datos y resultado](docs/img/app-resultado.png)
 
