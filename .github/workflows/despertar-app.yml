@@ -1,0 +1,54 @@
+# Mantiene despierta la app publicada en Streamlit Community Cloud.
+#
+# Streamlit pone la app en reposo tras unas 12 horas sin visitas (criterio del foro de
+# Streamlit, no documentado oficialmente). Esta tarea la abre cada 8 horas con un navegador y,
+# si está en reposo, pulsa el botón para despertarla. Si la app no carga, la ejecución falla y
+# GitHub avisa por correo, con una captura de la pantalla como artefacto.
+#
+# También se lanza a mano desde la pestaña Actions → «Despertar la app» → Run workflow.
+
+name: Despertar la app
+
+on:
+  schedule:
+    - cron: "17 */8 * * *" # cada 8 horas (UTC); minuto 17 para evitar las horas en punto, más saturadas
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # solo para el último paso: reactivar esta misma tarea
+
+jobs:
+  despertar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar Playwright y Chromium
+        run: |
+          pip install playwright==1.64.0
+          python -m playwright install --with-deps chromium
+
+      - name: Abrir la app y despertarla si está en reposo
+        run: python .github/scripts/despertar_app.py https://simulador-fiscal-fondos-etf.streamlit.app/
+
+      - name: Guardar una captura si la app no cargó
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estado-app
+          path: estado-app.png
+          if-no-files-found: ignore
+
+      # GitHub desactiva las tareas programadas de un repositorio público tras 60 días sin
+      # actividad. Reactivarla en cada ejecución reinicia ese plazo sin hacer commits.
+      - name: Reactivar esta tarea programada
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${{ github.repository }}/actions/workflows/despertar-app.yml/enable"
