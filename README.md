@@ -25,7 +25,7 @@ Caso de ejemplo: 20.000 € invertidos que hoy valen 30.000 €, sin otras renta
 
 Cuota: 6.000 € al 19 % + 4.000 € al 21 % (escala progresiva del ahorro).
 
-![Gráfico: con un fondo puedes aplazar el impuesto; con un ETF, no](contenido/2026-10-17-fondo-vs-etf/grafico.png)
+![Gráfico: con un fondo puedes aplazar el impuesto; con un ETF, no](contenido/2026-10-17-fondo-vs-etf/grafico-1-fondo-etf.png)
 
 ## La aplicación
 
@@ -65,7 +65,7 @@ Cada regla vive en [`simulador/normativa.py`](simulador/normativa.py) con su art
 - **Cuota incremental.** La cuota atribuible a una venta es la de la base del ahorro con la venta menos la de sin ella, después de compensar con el resto de rentas del año. Con varios productos se muestra en total: con una escala progresiva no hay una forma única de repartirla entre ellos.
 - **Compensación completa del art. 49 LIRPF**, en los dos sentidos, con arrastre y caducidad a cuatro años y el orden y el límite conjunto del 25 % del Manual de Renta de la AEAT.
 - **Rentabilidad anual por TIR** (bisección con `Decimal`), que pondera cuándo entró cada euro. No se anualizan periodos inferiores a un año.
-- **Tests con casos resueltos a mano.** Cada cálculo se contrasta con un caso desarrollado paso a paso en [`examples.md`](.claude/skills/calculo-plusvalias/examples.md), incluido el caso práctico de compensación del Manual de la AEAT. 99 tests con `pytest`, también de la app completa.
+- **Tests con casos resueltos a mano.** Cada cálculo se contrasta con un caso desarrollado paso a paso en [`examples.md`](.claude/skills/calculo-plusvalias/examples.md), incluido el caso práctico de compensación del Manual de la AEAT. 102 tests con `pytest`, también de la app completa.
 - **Gráficos accesibles.** Paletas validadas para daltonismo y contraste; los gráficos dibujan los resultados del simulador, nunca cifras propias.
 
 ## Estructura
@@ -78,7 +78,7 @@ simulador/
   compensacion.py   Integración y compensación de rentas del ahorro (art. 49 LIRPF)
   escenarios.py     Reembolso, traspaso y venta de ETF; planes con varias inversiones
   rentabilidad.py   Rentabilidad total y anual (TIR)
-  graficos.py       Gráfico de LinkedIn y gráficos de la app
+  graficos.py       Gráficos de LinkedIn y de la app
 app.py              Interfaz en Streamlit
 tests/              Un fichero de tests por módulo
 contenido/          Posts de LinkedIn con su gráfico y su caso reproducible

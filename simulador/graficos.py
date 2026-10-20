@@ -16,9 +16,16 @@ from pathlib import Path
 import plotly.graph_objects as go
 
 from simulador import normativa
-from simulador.calculo import desglose_cuota
-from simulador.escenarios import Escenario, ResultadoEscenario, ResultadoPlan, comparar_escenarios
-from simulador.lotes import Lote, Venta
+from simulador.calculo import TramoAplicado, desglose_cuota
+from simulador.escenarios import (
+    Escenario,
+    Posicion,
+    ResultadoEscenario,
+    ResultadoPlan,
+    comparar_escenarios,
+    simular_plan,
+)
+from simulador.lotes import Lote, TipoProducto, Venta
 from simulador.rentabilidad import Rentabilidad
 
 # Estética de la app (terminal financiera). Los colores de las series están validados con la
@@ -47,6 +54,7 @@ INFORME_EJES = "#a0a0a0"
 INFORME_REJILLA = "#e6e6e6"
 INFORME_RETENCION = "#c0392b"
 INFORME_RENTA = "#cf7f00"
+INFORME_DEVUELTO = "#f8dedb"  # fondo del rayado de la retención que se devuelve (tinte de INFORME_RETENCION)
 INFORME_APLAZADO = "#3b6aa0"  # filete del panel del diferimiento
 INFORME_PANEL = "#f4f5f7"
 INFORME_FUENTE = "DejaVu Sans, Liberation Sans, Arial, sans-serif"
@@ -87,13 +95,20 @@ def tipo_impositivo(tipo: Decimal) -> str:
 class _Barra:
     escenario: str
     detalle: str
-    retencion: Decimal
+    retencion: Decimal  # retención que queda como impuesto del año
     en_renta: Decimal
     rotulo: str  # cifra encima de la barra
+    devuelto: Decimal = Decimal("0")  # retención de más, que se devuelve en la Renta
 
     @property
     def total(self) -> Decimal:
-        return self.retencion + self.en_renta
+        return self.retencion + self.en_renta + self.devuelto
+
+
+TITULO_FONDO_FRENTE_A_ETF = "Con un fondo puedes aplazar el impuesto. Con un ETF, no."
+_TITULO_EJE_CUOTA = f"Cuota de IRPF por la venta, {normativa.EJERCICIO} (€)"
+_TITULO_EJE_RETENCION_Y_CUOTA = f"Retención y cuota de IRPF, {normativa.EJERCICIO} (€)"
+_TIPO_RETENCION = tipo_impositivo(normativa.TIPO_RETENCION_REEMBOLSO_FONDO)
 
 
 def texto_diferimiento(impuesto_latente: Decimal) -> str:
@@ -112,11 +127,52 @@ def texto_diferimiento(impuesto_latente: Decimal) -> str:
     )
 
 
-def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripcion_caso: str) -> go.Figure:
+def texto_tramos(tramos: Sequence[TramoAplicado], retencion: Decimal, impuesto_latente: Decimal) -> str:
+    """Panel del caso con una ganancia alta: la cuota por tramos frente a la retención fija."""
+    cuota = sum((tramo.cuota for tramo in tramos), Decimal("0"))
+    lineas = "".join(
+        f"{euros(tramo.importe)} al {tipo_impositivo(tramo.tipo)}: {euros(tramo.cuota)}<br>" for tramo in tramos
+    )
+    return (
+        "<b>¿Por qué no basta la retención?</b><br><br>"
+        "La escala del ahorro es progresiva:<br>"
+        f"{lineas}"
+        f"<b>Total: {euros(cuota)}</b><br><br>"
+        f"La gestora retiene un {_TIPO_RETENCION} fijo<br>"
+        f"({euros(retencion)}). Los {euros(cuota - retencion)} restantes<br>"
+        "se pagan en la Renta.<br><br>"
+        "Con un traspaso, 0 € hoy: los<br>"
+        f"{euros(impuesto_latente)} quedan aplazados."
+    )
+
+
+def texto_compensacion(ganancia: Decimal, perdida: Decimal, retencion: Decimal, devolucion: Decimal) -> str:
+    """Panel del caso con dos fondos, uno con ganancia y otro con pérdida (`perdida` en positivo)."""
+    return (
+        "<b>¿Por qué pagan distinto?</b><br><br>"
+        "Si los dos se reembolsan el mismo<br>"
+        "año, la pérdida compensa la<br>"
+        "ganancia (art. 49 LIRPF): tributan<br>"
+        f"{euros(ganancia)} − {euros(perdida)} = {euros(ganancia - perdida)}.<br><br>"
+        "La gestora retiene fondo a fondo:<br>"
+        f"el {_TIPO_RETENCION} de la ganancia ({euros(retencion)}),<br>"
+        f"sin restar la pérdida. Los {euros(devolucion)}<br>"
+        "de más se devuelven en la Renta.<br><br>"
+        "Si el fondo con pérdida se traspasa,<br>"
+        "su pérdida también se aplaza."
+    )
+
+
+def figura_fondo_frente_a_etf(
+    resultados: Sequence[ResultadoEscenario],
+    descripcion_caso: str,
+    titulo: str = TITULO_FONDO_FRENTE_A_ETF,
+    panel: str | None = None,
+) -> go.Figure:
     """Barras apiladas con lo que se paga este año en cada escenario.
 
-    La barra del traspaso queda vacía (no se paga nada hoy) y un panel lateral explica el
-    diferimiento con el impuesto latente. Pensado para una venta con ganancia.
+    La barra del traspaso queda vacía (no se paga nada hoy) y un panel lateral explica, por
+    defecto, el diferimiento con el impuesto latente. Pensado para una venta con ganancia.
     """
     por_escenario = {resultado.escenario: resultado for resultado in resultados}
     reembolso = por_escenario[Escenario.REEMBOLSO_FONDO]
@@ -137,6 +193,45 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         _Barra("Traspasar a otro fondo", "Sin impuesto ni retención hoy", cero, cero, "0 € este año"),
         _Barra("Vender el ETF", "Sin retención; no admite traspaso", cero, etf.cuota, f"{euros(etf.cuota)} este año"),
     ]
+    panel = panel if panel is not None else texto_diferimiento(traspaso.impuesto_latente)
+    return _figura_informe(barras, titulo, descripcion_caso, panel, _TITULO_EJE_CUOTA)
+
+
+def figura_planes(
+    planes: Sequence[tuple[str, ResultadoPlan]], descripcion_caso: str, titulo: str, panel: str
+) -> go.Figure:
+    """Como `figura_fondo_frente_a_etf`, pero con planes de varias inversiones.
+
+    Si la retención supera la cuota, la parte que se devuelve en la Renta se dibuja rayada
+    encima de la que queda como impuesto, para que la barra mida lo retenido.
+    """
+    cero = Decimal("0")
+    barras = []
+    for nombre, plan in planes:
+        if plan.cuota < 0:
+            raise ValueError("Este gráfico representa planes con cuota positiva o nula.")
+        regularizacion = plan.regularizacion_renta
+        rotulo = f"{euros(plan.cuota)} este año"
+        if regularizacion < 0:
+            detalle = f"{euros(plan.retencion)} de retención<br>− {euros(-regularizacion)} a devolver en la Renta"
+            barras.append(_Barra(nombre, detalle, plan.cuota, cero, rotulo, devuelto=-regularizacion))
+            continue
+        if plan.retencion > 0:
+            detalle = f"{euros(plan.retencion)} de retención<br>+ {euros(regularizacion)} a ingresar en la Renta"
+        elif regularizacion > 0:
+            detalle = "Sin retención: todo en la Renta"
+        elif plan.impuesto_latente > 0:
+            detalle = f"Sin impuesto hoy<br>{euros(plan.impuesto_latente)} aplazados"
+        else:
+            detalle = "Sin impuesto hoy"
+        barras.append(_Barra(nombre, detalle, plan.retencion, regularizacion, rotulo))
+    return _figura_informe(barras, titulo, descripcion_caso, panel, _TITULO_EJE_RETENCION_Y_CUOTA)
+
+
+def _figura_informe(
+    barras: Sequence[_Barra], titulo: str, descripcion_caso: str, panel: str, titulo_eje: str
+) -> go.Figure:
+    """Composición común de los gráficos de LinkedIn: barras, cabecera, pie y panel lateral."""
     # Escenario y, debajo, su detalle en gris, como etiqueta del eje.
     categorias = [
         f"<b>{barra.escenario}</b><br><span style='font-size:13px;color:{INFORME_TEXTO_SECUNDARIO}'>"
@@ -145,16 +240,25 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
     ]
 
     figura = go.Figure()
-    for nombre, campo, color in [
-        ("Retención al vender (pago a cuenta)", "retencion", INFORME_RETENCION),
-        ("A ingresar en la declaración de la Renta", "en_renta", INFORME_RENTA),
+    for nombre, campo, relleno in [
+        ("Retención al vender (pago a cuenta)", "retencion", {"color": INFORME_RETENCION}),
+        ("A ingresar en la declaración de la Renta", "en_renta", {"color": INFORME_RENTA}),
+        # Mismo color que la retención, rayado: es retención, pero no se queda como impuesto.
+        (
+            "Retención que se devuelve en la Renta",
+            "devuelto",
+            {"color": INFORME_DEVUELTO, "pattern": {"shape": "/", "fgcolor": INFORME_RETENCION, "solidity": 0.4}},
+        ),
     ]:
+        valores = [getattr(barra, campo) for barra in barras]
+        if not any(valores):
+            continue  # sin serie vacía en la leyenda
         figura.add_bar(
             x=categorias,
-            y=[getattr(barra, campo) for barra in barras],
+            y=valores,
             name=nombre,
             width=0.42,
-            marker={"color": color, "line": {"color": INFORME_FONDO, "width": 2}},
+            marker={**relleno, "line": {"color": INFORME_FONDO, "width": 2}},
             hoverinfo="skip",
         )
     for categoria, barra in zip(categorias, barras):
@@ -170,7 +274,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
 
     # Cabecera y pie, a 24 px del borde izquierdo de la imagen.
     for desde_arriba, texto, fuente in [
-        (18, "<b>Con un fondo puedes aplazar el impuesto. Con un ETF, no.</b>", {"size": 22, "color": INFORME_TEXTO}),
+        (18, f"<b>{titulo}</b>", {"size": 22, "color": INFORME_TEXTO}),
         (52, descripcion_caso, {"size": 14, "color": INFORME_TEXTO_SECUNDARIO}),
         (INFORME_ALTO - 26, PIE, {"size": 12, "color": INFORME_TEXTO_SECUNDARIO}),
     ]:
@@ -221,7 +325,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         yanchor="top",
         align="left",
         showarrow=False,
-        text=texto_diferimiento(traspaso.impuesto_latente),
+        text=panel,
         font={"size": 14, "color": INFORME_TEXTO},
     )
 
@@ -256,7 +360,7 @@ def figura_fondo_frente_a_etf(resultados: Sequence[ResultadoEscenario], descripc
         yaxis={
             **eje,
             "automargin": False,
-            "title": {"text": f"Cuota de IRPF por la venta, {normativa.EJERCICIO} (€)", "font": {"size": 14}},
+            "title": {"text": titulo_eje, "font": {"size": 14}},
             "range": [0, maximo * Decimal("1.4")],  # aire para la leyenda y las cifras
             "tickformat": ",d",
             "ticksuffix": " €",
@@ -436,11 +540,76 @@ def caso_b() -> tuple[ResultadoEscenario, ...]:
     return comparar_escenarios(lotes, venta)
 
 
+DESCRIPCION_CASO_I = (
+    "Fondo A: 20.000 € que hoy valen 30.000 € (+10.000 €). Fondo B: 20.000 € que hoy valen 16.000 € "
+    f"(−4.000 €). Sin otras rentas del ahorro. Ejercicio {normativa.EJERCICIO}."
+)
+TITULO_CASO_I = "Una pérdida solo rebaja el impuesto si también se materializa"
+
+
+def caso_i() -> tuple[tuple[str, ResultadoPlan], ...]:
+    """Caso I de examples.md: un fondo gana 10.000 € y otro pierde 4.000 €, en tres planes."""
+
+    def fondo(nombre: str, precio_hoy: str) -> Posicion:
+        lotes = (Lote(date(2023, 1, 15), Decimal("1000"), Decimal("20")),)
+        return Posicion(nombre, TipoProducto.FONDO, lotes, Venta(date(2026, 10, 16), Decimal("1000"), Decimal(precio_hoy)))
+
+    posiciones = [fondo("A", "30"), fondo("B", "16")]
+    reembolsar, traspasar = Escenario.REEMBOLSO_FONDO, Escenario.TRASPASO_FONDO
+    return (
+        ("Reembolsar A y B", simular_plan(posiciones, {"A": reembolsar, "B": reembolsar})),
+        ("Reembolsar A, traspasar B", simular_plan(posiciones, {"A": reembolsar, "B": traspasar})),
+        ("Traspasar A y B", simular_plan(posiciones, {"A": traspasar, "B": traspasar})),
+    )
+
+
+def figura_caso_i() -> go.Figure:
+    planes = caso_i()
+    _, reembolsar_todo = planes[0]
+    ganancias = [p.ganancia_patrimonial for p in reembolsar_todo.posiciones]
+    panel = texto_compensacion(
+        ganancia=sum((g for g in ganancias if g > 0), Decimal("0")),
+        perdida=-sum((g for g in ganancias if g < 0), Decimal("0")),
+        retencion=reembolsar_todo.retencion,
+        devolucion=-reembolsar_todo.regularizacion_renta,
+    )
+    return figura_planes(planes, DESCRIPCION_CASO_I, TITULO_CASO_I, panel)
+
+
+DESCRIPCION_CASO_A = (
+    "Inversión de 40.000 € que hoy vale 100.000 € (ganancia de 60.000 €), "
+    f"sin otras rentas del ahorro. Ejercicio {normativa.EJERCICIO}."
+)
+TITULO_CASO_A = f"Con ganancias altas, la retención del {_TIPO_RETENCION} se queda corta"
+
+
+def caso_a() -> tuple[ResultadoEscenario, ...]:
+    """Caso A de examples.md (base del ahorro de 60.000 €) como venta: 40.000 € que hoy valen 100.000 €."""
+    lotes = [Lote(date(2023, 1, 15), Decimal("1000"), Decimal("40"))]
+    venta = Venta(date(2026, 10, 16), Decimal("1000"), Decimal("100"))
+    return comparar_escenarios(lotes, venta)
+
+
+def figura_caso_a() -> go.Figure:
+    resultados = caso_a()
+    por_escenario = {resultado.escenario: resultado for resultado in resultados}
+    reembolso = por_escenario[Escenario.REEMBOLSO_FONDO]
+    # Sin otras rentas del ahorro, la base antes de la venta es 0.
+    tramos = desglose_cuota(Decimal("0"), reembolso.compensacion.base_ahorro)
+    panel = texto_tramos(tramos, reembolso.retencion, por_escenario[Escenario.TRASPASO_FONDO].impuesto_latente)
+    return figura_fondo_frente_a_etf(resultados, DESCRIPCION_CASO_A, TITULO_CASO_A, panel)
+
+
 def main() -> None:
     carpeta = Path(__file__).resolve().parent.parent / "contenido" / "2026-10-17-fondo-vs-etf"
     carpeta.mkdir(parents=True, exist_ok=True)
-    figura = figura_fondo_frente_a_etf(caso_b(), DESCRIPCION_CASO_B)
-    figura.write_image(carpeta / "grafico.png", width=INFORME_ANCHO, height=INFORME_ALTO, scale=INFORME_ESCALA)
+    figuras = {
+        "grafico-1-fondo-etf.png": figura_fondo_frente_a_etf(caso_b(), DESCRIPCION_CASO_B),
+        "grafico-2-compensacion.png": figura_caso_i(),
+        "grafico-3-tramos.png": figura_caso_a(),
+    }
+    for fichero, figura in figuras.items():
+        figura.write_image(carpeta / fichero, width=INFORME_ANCHO, height=INFORME_ALTO, scale=INFORME_ESCALA)
 
 
 if __name__ == "__main__":

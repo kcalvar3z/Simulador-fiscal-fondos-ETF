@@ -25,7 +25,7 @@ El autor es un estudiante de Derecho + ADE que quiere posicionarse en fiscalidad
    - **La consecuencia práctica**, formulada como información: "Si tienes fondos, existe la opción del traspaso…". Nunca "vende", "compra" ni "deberías".
    - **Cierre** con pregunta abierta o invitación a comentar.
    - **Aviso**: "Contenido divulgativo; no constituye asesoramiento fiscal."
-5. Longitud: 150-250 palabras. Sin más de 3 hashtags (p. ej. #Fiscalidad #IRPF #Inversión).
+5. Longitud: 150-300 palabras. Sin más de 3 hashtags (p. ej. #Fiscalidad #IRPF #Inversión).
 6. Entrega en `contenido/AAAA-MM-DD-tema/post.md` junto con el PNG, y el texto también en la respuesta para copiarlo.
 
 ## Reglas
