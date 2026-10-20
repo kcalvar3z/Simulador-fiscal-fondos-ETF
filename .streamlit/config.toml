@@ -22,7 +22,6 @@ showWidgetBorder = true
 # #16B182 es demasiado claro sobre blanco (2,75:1): en modo claro solo decora la cabecera.
 
 [theme.light]
-base = "light"
 primaryColor = "#009a77"              # verde: deslizadores, selección, foco (3,6:1 sobre blanco)
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#ededed"  # fondo de los campos y de las cabeceras de tabla
@@ -41,7 +40,6 @@ dataframeHeaderBackgroundColor = "#ededed"
 dataframeHeaderTextColor = "#153a31"
 
 [theme.dark]
-base = "dark"
 primaryColor = "#16b182"              # el verde principal: 6,1:1 sobre el fondo oscuro
 backgroundColor = "#10201c"           # #153A31 oscurecido
 secondaryBackgroundColor = "#153a31"
