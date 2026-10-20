@@ -5,9 +5,19 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from app import AVISO_LEGAL, TRASPASAR, DatosProducto, a_decimal, construir_posicion, formato_euros
+from app import (
+    AVISO_LEGAL,
+    TRASPASAR,
+    DatosProducto,
+    a_decimal,
+    calcular_planes,
+    construir_posicion,
+    formato_euros,
+    mensaje_clave,
+    nota_plan,
+)
 from simulador.calculo import calcular_ganancia
-from simulador.escenarios import Escenario
+from simulador.escenarios import Escenario, OtrasRentasAhorro
 from simulador.lotes import TipoProducto
 
 D = Decimal
@@ -88,6 +98,43 @@ def test_modo_detallado_aplica_fifo_ejemplo_de_referencia():
 def test_inversion_sin_nombre_da_error():
     with pytest.raises(ValueError, match="nombre"):
         construir_posicion(DatosProducto(" ", TipoProducto.FONDO, Escenario.REEMBOLSO_FONDO), FECHA_VENTA)
+
+
+# Textos con pérdida: no se habla de ganancia ni de un impuesto que pagar
+
+
+def textos_de(tipo: TipoProducto, operacion: Escenario, invertido: float, valor_hoy: float):
+    datos = DatosProducto("Mi inversión", tipo, operacion, invertido, date(2023, 1, 15), valor_hoy, 100)
+    posiciones = [construir_posicion(datos, FECHA_VENTA)]
+    planes = calcular_planes(posiciones, {"Mi inversión": operacion}, OtrasRentasAhorro())
+    return mensaje_clave(posiciones, planes), {plan.titulo: nota_plan(plan.resultado) for plan in planes if plan.resultado}
+
+
+def test_fondo_con_perdida_explica_el_arrastre_y_que_el_traspaso_aplaza_una_perdida():
+    mensaje, notas = textos_de(TipoProducto.FONDO, Escenario.REEMBOLSO_FONDO, 50000.0, 25000.0)
+
+    assert "no pagas IRPF, porque el resultado de la venta es una pérdida" in mensaje
+    assert "Quedan 25.000,00 € de pérdida sin compensar" in mensaje
+    assert "la pérdida también se difiere" in mensaje
+    assert "la ganancia se difiere" not in mensaje
+    assert "se retienen" not in mensaje
+    assert notas["Traspaso a otro fondo"] == "Con el traspaso aplazas 25.000,00 € de pérdida."
+
+
+def test_etf_con_perdida_no_dice_que_se_pague_nada():
+    mensaje, _ = textos_de(TipoProducto.ETF, Escenario.VENTA_ETF, 50000.0, 25000.0)
+
+    assert "no pagas IRPF" in mensaje
+    assert "la pagas entera" not in mensaje
+
+
+def test_app_con_perdida_rotula_perdida_y_no_neto():
+    app = ejecutar_app()
+    app.number_input(key="valor_hoy_0").set_value(15000.0).run()
+    assert not app.exception
+    etiquetas = [m.label for m in app.metric]
+    assert "Pérdida antes de impuestos" in etiquetas and "Pérdida tras impuestos" in etiquetas
+    assert "Neto tras impuestos" not in etiquetas
 
 
 # App completa

@@ -28,20 +28,17 @@ from simulador.escenarios import (
 from simulador.lotes import Lote, TipoProducto, Venta
 from simulador.rentabilidad import Rentabilidad
 
-# Estética de la app (terminal financiera). Los colores de las series están validados con la
-# skill dataviz en modo oscuro sobre FONDO: banda de luminosidad, croma, separación con
-# daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
-FONDO = "#0a0a0a"
-TITULOS = "#ffffff"
-TEXTO = "#e8e8ed"
-TEXTO_SECUNDARIO = "#a0a0a8"
-ACENTO = "#f5aa20"
-REJILLA = "#1f1f24"
-COLOR_RETENCION = "#ca7c18"
-COLOR_RENTA = "#00a0b4"
-COLOR_APLAZADO = "#5b6ee8"
-FUENTE = "IBM Plex Sans, Liberation Sans, Arial, sans-serif"
-FUENTE_CIFRAS = "IBM Plex Mono, DejaVu Sans Mono, monospace"
+# Estética de los gráficos de la app. El fondo, el texto y la rejilla los pone el tema de
+# Streamlit; aquí solo van los colores de las series. Azul y naranja, validados con la skill
+# dataviz sobre el fondo negro #0b0b0c (luminosidad, croma, daltonismo y contraste ≥ 3:1).
+# Los totales y lo invertido van en verde #00ff80, elegido por el autor: pasa daltonismo y
+# contraste, pero es más luminoso que los otros dos (falla la banda de luminosidad), así que
+# esas barras pesan más a la vista.
+COLOR_RETENCION = "#d95926"  # naranja: impuestos
+COLOR_RENTA = "#3987e5"  # azul: ganancias y valor actual
+COLOR_APLAZADO = "#00ff80"  # verde: totales y lo invertido
+COLOR_CONECTORES = "rgba(128, 128, 128, 0.5)"  # gris semitransparente: se ve sobre el negro
+FUENTE = "Montserrat, Helvetica, Arial, sans-serif"
 
 # Estética del gráfico de LinkedIn: informe analítico sobre blanco, apaisado. Colores validados
 # con la skill dataviz en modo claro sobre blanco (todas las parejas, sin avisos).
@@ -396,13 +393,13 @@ def _y_informe(desde_arriba_px: float) -> float:
 
 
 def _estilo_app(figura: go.Figure, alto: int) -> go.Figure:
-    """Fondo transparente y tipografía de la app; los colores de texto son los del tema oscuro."""
+    """Fondo transparente y tipografía de la app; los colores de texto y rejilla, los del tema activo."""
     figura.update_layout(
         height=alto,
         separators=",.",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": FUENTE, "color": TEXTO, "size": 14},
+        font={"family": FUENTE, "size": 14},
         margin={"l": 10, "r": 10, "t": 40, "b": 10},
         legend={"orientation": "h", "x": 0, "y": 1.02, "xanchor": "left", "yanchor": "bottom"},
         hoverlabel={"font": {"family": FUENTE}},
@@ -424,7 +421,7 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             x=importes,
             name=serie,
             orientation="h",
-            marker={"color": color, "line": {"color": FONDO, "width": 2}},
+            marker={"color": color},
             customdata=[euros(importe) for importe in importes],
             hovertemplate="%{y}<br>" + serie + ": %{customdata}<extra></extra>",
         )
@@ -438,7 +435,7 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             xanchor="left",
             showarrow=False,
             text=f"{euros_con_signo(r.ganancia)} · {porcentaje(r.total)} · {anual}",
-            font={"family": FUENTE_CIFRAS, "size": 14, "color": TEXTO},
+            font={"size": 14},
         )
     figura.update_layout(
         barmode="group",
@@ -449,11 +446,8 @@ def figura_rentabilidad(filas: Sequence[tuple[str, Rentabilidad]]) -> go.Figure:
             "range": [0, maximo * Decimal("1.7")],  # sitio para la rentabilidad
             "ticksuffix": " €",
             "tickformat": ",d",
-            "gridcolor": REJILLA,
-            "zerolinecolor": "#2d2d32",
-            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
         },
-        yaxis={"autorange": "reversed", "tickfont": {"size": 15, "color": TEXTO}},
+        yaxis={"autorange": "reversed", "tickfont": {"size": 15}},
     )
     return _estilo_app(figura, alto=110 + 95 * len(filas))
 
@@ -490,36 +484,60 @@ def pasos_cascada(plan: ResultadoPlan) -> tuple[PasoCascada, ...]:
     ahorro = sum((tramo.cuota for tramo in tramos), Decimal("0")) - plan.cuota
     if ahorro != 0:
         pasos.append(PasoCascada("Ahorro por compensaciones", ahorro))
-    pasos.append(PasoCascada("Neto tras el IRPF", resultado - plan.cuota, total=True))
+    neto = resultado - plan.cuota
+    pasos.append(PasoCascada("Neto tras el IRPF" if neto >= 0 else "Pérdida tras el IRPF", neto, total=True))
     return tuple(pasos)
 
 
 def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
+    """Cascada con barras flotantes, para dar a cada barra el color de su signo.
+
+    Las subidas van en azul y las bajadas en naranja. Los totales van en verde si son positivos
+    y en naranja si son una pérdida: un resultado negativo nunca lleva el color de los positivos.
+    """
+    acumulado = Decimal("0")
+    bases, colores, textos = [], [], []
+    for paso in pasos:
+        if paso.total:
+            bases.append(Decimal("0"))
+            colores.append(COLOR_APLAZADO if paso.importe >= 0 else COLOR_RETENCION)
+            textos.append(euros(paso.importe))
+            acumulado = paso.importe
+        else:
+            bases.append(acumulado)
+            colores.append(COLOR_RENTA if paso.importe >= 0 else COLOR_RETENCION)
+            textos.append(euros_con_signo(paso.importe))
+            acumulado += paso.importe
+    etiquetas = [paso.etiqueta.replace(" · ", "<br>") for paso in pasos]
     figura = go.Figure(
-        go.Waterfall(
-            x=[paso.etiqueta.replace(" · ", "<br>") for paso in pasos],
+        go.Bar(
+            x=etiquetas,
             y=[paso.importe for paso in pasos],
-            measure=["total" if paso.total else "relative" for paso in pasos],
-            text=[euros(paso.importe) if paso.total else euros_con_signo(paso.importe) for paso in pasos],
+            base=bases,
+            marker={"color": colores},
+            text=textos,
             textposition="outside",
-            textfont={"family": FUENTE_CIFRAS, "color": TEXTO},
-            increasing={"marker": {"color": COLOR_RENTA}},
-            decreasing={"marker": {"color": COLOR_RETENCION}},
-            totals={"marker": {"color": COLOR_APLAZADO}},
-            connector={"line": {"color": "#2d2d32", "width": 1}},
+            cliponaxis=False,
             hovertemplate="%{x}: %{text}<extra></extra>",
         )
     )
+    # Conectores: una línea fina al nivel en que termina cada barra y empieza la siguiente.
+    for indice, (base, paso) in enumerate(zip(bases, pasos)):
+        if indice + 1 < len(pasos):
+            nivel = paso.importe if paso.total else base + paso.importe
+            figura.add_shape(
+                type="line",
+                x0=indice + 0.4,
+                x1=indice + 0.6,
+                y0=nivel,
+                y1=nivel,
+                line={"color": COLOR_CONECTORES, "width": 1},
+            )
     figura.update_layout(
         showlegend=False,
-        yaxis={
-            "ticksuffix": " €",
-            "tickformat": ",d",
-            "gridcolor": REJILLA,
-            "zerolinecolor": "#2d2d32",
-            "tickfont": {"family": FUENTE_CIFRAS, "color": TEXTO_SECUNDARIO},
-        },
-        xaxis={"tickfont": {"size": 13, "color": TEXTO}},
+        bargap=0.2,
+        yaxis={"ticksuffix": " €", "tickformat": ",d"},
+        xaxis={"tickfont": {"size": 13}},
     )
     figura.update_yaxes(rangemode="tozero")
     return _estilo_app(figura, alto=440)
