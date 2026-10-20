@@ -2,7 +2,7 @@
 
 Calcula y compara el coste en el IRPF de deshacer una inversión de tres formas: **reembolsar un fondo**, **traspasarlo a otro fondo** o **vender un ETF**. Residentes en territorio común, ejercicio 2026.
 
-**Pruébalo en la web:** [simulador-fiscal-fondos-etf.streamlit.app](https://simulador-fiscal-fondos-etf.streamlit.app/)
+**Pruébalo en la web:** [simulador-fiscal-fondos-etf.streamlit.app](https://simulador-fiscal-fondos-etf.streamlit.app/). Si está en reposo, pulsa el botón para activarla; tarda unos segundos.
 
 > Cálculo orientativo con fines divulgativos. No constituye asesoramiento fiscal ni financiero.
 
@@ -66,6 +66,7 @@ Cada regla vive en [`simulador/normativa.py`](simulador/normativa.py) con su art
 - **Compensación completa del art. 49 LIRPF**, en los dos sentidos, con arrastre y caducidad a cuatro años y el orden y el límite conjunto del 25 % del Manual de Renta de la AEAT.
 - **Rentabilidad anual por TIR** (bisección con `Decimal`), que pondera cuándo entró cada euro. No se anualizan periodos inferiores a un año.
 - **Tests con casos resueltos a mano.** Cada cálculo se contrasta con un caso desarrollado paso a paso en [`examples.md`](.claude/skills/calculo-plusvalias/examples.md), incluido el caso práctico de compensación del Manual de la AEAT. 107 tests con `pytest`, también de la app completa.
+- **App siempre disponible.** Streamlit Community Cloud pone en reposo las apps sin visitas; una tarea de GitHub Actions ([`despertar-app.yml`](.github/workflows/despertar-app.yml)) la abre cada 8 horas con un navegador y la despierta si hace falta, y se reactiva sola para que GitHub no la desactive por inactividad.
 - **Gráficos accesibles.** Paletas validadas para daltonismo y contraste; los gráficos dibujan los resultados del simulador, nunca cifras propias.
 
 ## Estructura
@@ -81,6 +82,7 @@ simulador/
   graficos.py       Gráficos de LinkedIn y de la app
 app.py              Interfaz en Streamlit
 tests/              Un fichero de tests por módulo
+.github/            Tarea programada que mantiene despierta la app publicada
 contenido/          Posts de LinkedIn con su gráfico y su caso reproducible
 docs/               Fuentes normativas y capturas
 ```
