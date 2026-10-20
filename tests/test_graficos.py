@@ -6,12 +6,16 @@ import pytest
 from simulador.compensacion import SaldoPendiente
 from simulador.escenarios import Escenario, OtrasRentasAhorro, Posicion, comparar_escenarios, simular_plan
 from simulador.graficos import (
+    COLOR_APLAZADO,
+    COLOR_RENTA,
+    COLOR_RETENCION,
     DESCRIPCION_CASO_B,
     PIE,
     caso_b,
     euros,
     figura_caso_a,
     figura_caso_i,
+    figura_cascada,
     figura_fondo_frente_a_etf,
     figura_planes,
     figura_rentabilidad,
@@ -156,8 +160,28 @@ def test_cascada_caso_g_perdida_compensada_con_intereses():
     assert pasos([posicion("A", "20", "18")], {"A": Escenario.REEMBOLSO_FONDO}, otras) == [
         ("Pérdida · A", D("-2000"), False),
         ("Ahorro por compensaciones", D("190"), False),
-        ("Neto tras el IRPF", D("-1810"), True),
+        ("Pérdida tras el IRPF", D("-1810"), True),
     ]
+
+
+def test_cascada_con_perdida_el_total_no_lleva_el_color_de_los_positivos():
+    caso_g = pasos_cascada(
+        simular_plan(
+            [posicion("A", "20", "18")],
+            {"A": Escenario.REEMBOLSO_FONDO},
+            OtrasRentasAhorro(saldo_rendimientos=D("4000")),
+        )
+    )
+    (barras,) = figura_cascada(caso_g).data
+    # Pérdida (baja), ahorro por compensaciones (sube) y pérdida tras el IRPF (total negativo).
+    assert list(barras.marker.color) == [COLOR_RETENCION, COLOR_RENTA, COLOR_RETENCION]
+    assert list(barras.base) == [D("0"), D("-2000"), D("0")]
+
+
+def test_cascada_con_ganancia_el_total_va_en_el_color_de_los_totales():
+    caso_b_ = pasos_cascada(simular_plan([posicion("A", "20", "30")], {"A": Escenario.REEMBOLSO_FONDO}))
+    (barras,) = figura_cascada(caso_b_).data
+    assert list(barras.marker.color) == [COLOR_RENTA, COLOR_RETENCION, COLOR_RETENCION, COLOR_APLAZADO]
 
 
 def test_cascada_vacia_si_todo_se_traspasa():

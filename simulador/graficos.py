@@ -484,31 +484,59 @@ def pasos_cascada(plan: ResultadoPlan) -> tuple[PasoCascada, ...]:
     ahorro = sum((tramo.cuota for tramo in tramos), Decimal("0")) - plan.cuota
     if ahorro != 0:
         pasos.append(PasoCascada("Ahorro por compensaciones", ahorro))
-    pasos.append(PasoCascada("Neto tras el IRPF", resultado - plan.cuota, total=True))
+    neto = resultado - plan.cuota
+    pasos.append(PasoCascada("Neto tras el IRPF" if neto >= 0 else "Pérdida tras el IRPF", neto, total=True))
     return tuple(pasos)
 
 
 def figura_cascada(pasos: Sequence[PasoCascada]) -> go.Figure:
+    """Cascada con barras flotantes, para dar a cada barra el color de su signo.
+
+    Las subidas van en azul y las bajadas en naranja. Los totales van en verde si son positivos
+    y en naranja si son una pérdida: un resultado negativo nunca lleva el color de los positivos.
+    """
+    acumulado = Decimal("0")
+    bases, colores, textos = [], [], []
+    for paso in pasos:
+        if paso.total:
+            bases.append(Decimal("0"))
+            colores.append(COLOR_APLAZADO if paso.importe >= 0 else COLOR_RETENCION)
+            textos.append(euros(paso.importe))
+            acumulado = paso.importe
+        else:
+            bases.append(acumulado)
+            colores.append(COLOR_RENTA if paso.importe >= 0 else COLOR_RETENCION)
+            textos.append(euros_con_signo(paso.importe))
+            acumulado += paso.importe
+    etiquetas = [paso.etiqueta.replace(" · ", "<br>") for paso in pasos]
     figura = go.Figure(
-        go.Waterfall(
-            x=[paso.etiqueta.replace(" · ", "<br>") for paso in pasos],
+        go.Bar(
+            x=etiquetas,
             y=[paso.importe for paso in pasos],
-            measure=["total" if paso.total else "relative" for paso in pasos],
-            text=[euros(paso.importe) if paso.total else euros_con_signo(paso.importe) for paso in pasos],
+            base=bases,
+            marker={"color": colores},
+            text=textos,
             textposition="outside",
-            increasing={"marker": {"color": COLOR_RENTA}},
-            decreasing={"marker": {"color": COLOR_RETENCION}},
-            totals={"marker": {"color": COLOR_APLAZADO}},
-            connector={"line": {"color": COLOR_CONECTORES, "width": 1}},
+            cliponaxis=False,
             hovertemplate="%{x}: %{text}<extra></extra>",
         )
     )
+    # Conectores: una línea fina al nivel en que termina cada barra y empieza la siguiente.
+    for indice, (base, paso) in enumerate(zip(bases, pasos)):
+        if indice + 1 < len(pasos):
+            nivel = paso.importe if paso.total else base + paso.importe
+            figura.add_shape(
+                type="line",
+                x0=indice + 0.4,
+                x1=indice + 0.6,
+                y0=nivel,
+                y1=nivel,
+                line={"color": COLOR_CONECTORES, "width": 1},
+            )
     figura.update_layout(
         showlegend=False,
-        yaxis={
-            "ticksuffix": " €",
-            "tickformat": ",d",
-        },
+        bargap=0.2,
+        yaxis={"ticksuffix": " €", "tickformat": ",d"},
         xaxis={"tickfont": {"size": 13}},
     )
     figura.update_yaxes(rangemode="tozero")

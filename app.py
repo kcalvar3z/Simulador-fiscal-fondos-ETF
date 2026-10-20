@@ -248,6 +248,106 @@ def tabla_por_producto(posiciones: list[Posicion], planes: list[PlanMostrado]) -
     )
 
 
+def _traspasado(plan: ResultadoPlan) -> tuple[Decimal, Decimal]:
+    """(ganancia, pérdida en positivo) de las posiciones que el plan traspasa."""
+    resultados = [p.ganancia_patrimonial for p in plan.posiciones if p.operacion is Escenario.TRASPASO_FONDO]
+    return sum((g for g in resultados if g > 0), Decimal("0")), -sum((g for g in resultados if g < 0), Decimal("0"))
+
+
+def _perdida_del_ejercicio_pendiente(plan: ResultadoPlan) -> Decimal:
+    """Pérdida de este ejercicio que no se compensa ahora y pasa a los años siguientes."""
+    pendientes = plan.compensacion.perdidas_patrimoniales_pendientes
+    return sum((s.importe for s in pendientes if s.ejercicio == normativa.EJERCICIO), Decimal("0"))
+
+
+def _texto_arrastre(plan: ResultadoPlan) -> str:
+    pendiente = _perdida_del_ejercicio_pendiente(plan)
+    if pendiente <= 0:
+        return ""
+    return (
+        f" Quedan {formato_euros(pendiente)} de pérdida sin compensar, que podrás restar de tus ganancias de "
+        f"los {normativa.EJERCICIOS_ARRASTRE_SALDOS_NEGATIVOS} años siguientes (art. 49 LIRPF)."
+    )
+
+
+def _linea_venta(titulo: str, r: ResultadoPlan, hay_etf: bool, solo_etf: bool, un_producto: bool) -> str:
+    """Qué pasa al reembolsar o vender, según haya cuota, ahorro o nada que pagar."""
+    vendido = sum(
+        (p.ganancia_patrimonial for p in r.posiciones if p.operacion is not Escenario.TRASPASO_FONDO), Decimal("0")
+    )
+    if r.cuota > 0:
+        texto = f"- **{titulo}:** la cuota es {formato_euros(r.cuota)}."
+        if solo_etf:
+            texto += " Los ETF no tienen retención al vender: la pagas entera en la declaración."
+    elif r.cuota < 0:
+        texto = (
+            f"- **{titulo}:** la pérdida reduce en {formato_euros(-r.cuota)} el IRPF de tus otras rentas del "
+            "ahorro (art. 49 LIRPF)."
+        )
+    elif vendido < 0:
+        texto = f"- **{titulo}:** no pagas IRPF, porque el resultado de la venta es una pérdida."
+    elif vendido > 0:
+        texto = f"- **{titulo}:** no pagas IRPF: la ganancia queda compensada con pérdidas de años anteriores."
+    else:
+        texto = f"- **{titulo}:** no pagas IRPF, porque no hay ganancia ni pérdida."
+    if r.retencion > 0:
+        texto += f" Al reembolsar se retienen {formato_euros(r.retencion)}, que se descuentan en la Renta"
+        # Con varios productos, una línea aparte explica por qué la retención supera la cuota.
+        texto += "; como superan la cuota, la diferencia se devuelve" if r.retencion > r.cuota and un_producto else ""
+        texto += " (los ETF no tienen retención)." if hay_etf else "."
+    return texto + _texto_arrastre(r)
+
+
+def _linea_traspaso(titulo: str, t: ResultadoPlan, un_producto: bool, hay_etf: bool) -> str:
+    ganancia, perdida = _traspasado(t)
+    if ganancia and perdida:
+        difiere = "la ganancia y la pérdida se difieren"
+    elif ganancia:
+        difiere = "la ganancia se difiere"
+    elif perdida:
+        difiere = "la pérdida también se difiere: no se integra en la Renta de este año"
+    else:
+        difiere = "no hay ganancia ni pérdida que diferir"
+    texto = f"- **{titulo}:** " + ("no tributas ahora" if un_producto else "los fondos no tributan ahora") + f"; {difiere}."
+    conserva = "porque las nuevas participaciones conservan el valor y la fecha de compra originales."
+    if t.impuesto_latente > 0:
+        texto += (
+            f" El impuesto latente ({formato_euros(t.impuesto_latente)}, calculado como si reembolsaras hoy) "
+            f"aflora cuando reembolses, {conserva}"
+        )
+    elif t.impuesto_latente < 0:
+        texto += (
+            f" El ahorro latente ({formato_euros(-t.impuesto_latente)}, calculado como si reembolsaras hoy) "
+            f"se aprovecha cuando reembolses, {conserva}"
+        )
+    elif ganancia or perdida:
+        texto += f" Se tendrá en cuenta cuando reembolses, {conserva}"
+    if hay_etf:
+        texto += f" Los ETF no admiten traspaso: se venden igualmente y la cuota de hoy es {formato_euros(t.cuota)}."
+    return texto
+
+
+def _linea_seleccion(s: ResultadoPlan) -> str:
+    if s.cuota > 0:
+        cuota = f"pagas {formato_euros(s.cuota)} de cuota este año"
+    elif s.cuota < 0:
+        cuota = f"tu IRPF del año baja {formato_euros(-s.cuota)}"
+    else:
+        cuota = "no pagas cuota este año"
+    if s.retencion > 0:
+        cuota += f", con {formato_euros(s.retencion)} de retención,"
+    if s.impuesto_latente > 0:
+        latente = f" y dejas un impuesto latente de {formato_euros(s.impuesto_latente)}"
+    elif s.impuesto_latente < 0:
+        latente = (
+            f" y dejas un ahorro latente de {formato_euros(-s.impuesto_latente)}: la pérdida que aplazas "
+            "reducirá tu impuesto cuando reembolses"
+        )
+    else:
+        latente = ""
+    return f"- **Tu selección:** {cuota}{latente}.".replace(",.", ".")
+
+
 def mensaje_clave(posiciones: list[Posicion], planes: list[PlanMostrado]) -> str:
     por_clave = {plan.clave: plan for plan in planes}
     reembolsar = por_clave["reembolsar"]
@@ -257,47 +357,22 @@ def mensaje_clave(posiciones: list[Posicion], planes: list[PlanMostrado]) -> str
 
     if not hay_fondos:
         return (
-            f"- **{reembolsar.titulo}:** la cuota ({formato_euros(r.cuota)}) se paga en la Renta del ejercicio. "
-            "Los ETF no tienen retención al vender, así que no adelantas nada: lo pagas entero en la declaración.\n"
-            "- **Un ETF no admite traspaso:** vender siempre tributa en el ejercicio (art. 94 LIRPF)."
+            _linea_venta(reembolsar.titulo, r, hay_etf=False, solo_etf=True, un_producto=len(posiciones) == 1)
+            + "\n- **Un ETF no admite traspaso:** la venta siempre se integra en la Renta del ejercicio, con "
+            "ganancia o con pérdida (art. 94 LIRPF)."
         )
 
     lineas = []
     if "seleccion" in por_clave:
-        s = por_clave["seleccion"].resultado
-        latente = (
-            f"un ahorro latente de {formato_euros(-s.impuesto_latente)}: la pérdida que aplazas reducirá tu "
-            "impuesto cuando reembolses"
-            if s.impuesto_latente < 0
-            else f"un impuesto latente de {formato_euros(s.impuesto_latente)}"
-        )
-        lineas.append(
-            f"- **Tu selección:** pagas {formato_euros(s.cuota)} de cuota este año, con "
-            f"{formato_euros(s.retencion)} de retención, y dejas {latente}."
-        )
-    lineas.append(
-        f"- **{reembolsar.titulo}:** la cuota es {formato_euros(r.cuota)}. Al reembolsar se retienen "
-        f"{formato_euros(r.retencion)}, que se descuentan en la Renta"
-        + (" (los ETF no tienen retención)." if hay_etf else ".")
-    )
+        lineas.append(_linea_seleccion(por_clave["seleccion"].resultado))
+    lineas.append(_linea_venta(reembolsar.titulo, r, hay_etf=hay_etf, solo_etf=False, un_producto=len(posiciones) == 1))
     if len(posiciones) > 1 and r.retencion > r.cuota and r.retencion > 0:
         lineas.append(
             "- **Las retenciones superan la cuota** porque se calculan fondo a fondo y no descuentan las "
             "pérdidas de otros productos: la diferencia se devuelve en la Renta."
         )
-    t = por_clave["traspasar"].resultado
-    linea_traspaso = (
-        f"- **{por_clave['traspasar'].titulo}:** "
-        + ("no tributas ahora" if len(posiciones) == 1 else "los fondos no tributan ahora")
-        + "; la ganancia se difiere. "
-        f"El impuesto latente ({formato_euros(t.impuesto_latente)}, calculado como si reembolsaras hoy) aflora "
-        "cuando reembolses, porque las nuevas participaciones conservan el valor y la fecha de compra originales."
-    )
-    if hay_etf:
-        linea_traspaso += (
-            f" Los ETF no admiten traspaso: se venden igualmente y la cuota de hoy es {formato_euros(t.cuota)}."
-        )
-    lineas.append(linea_traspaso)
+    traspasar = por_clave["traspasar"]
+    lineas.append(_linea_traspaso(traspasar.titulo, traspasar.resultado, len(posiciones) == 1, hay_etf))
     if r.retencion != 0:
         lineas.append("- Una retención no es un impuesto extra: es un pago a cuenta que se descuenta en la Renta.")
     return "\n".join(lineas)
@@ -305,6 +380,7 @@ def mensaje_clave(posiciones: list[Posicion], planes: list[PlanMostrado]) -> str
 
 def textos_avisos(planes: list[PlanMostrado]) -> list[str]:
     con_perdida: list[str] = []
+    fondo_con_perdida = False
     etf_antiguos: list[str] = []
     textos: list[str] = []
     for plan in planes:
@@ -313,6 +389,7 @@ def textos_avisos(planes: list[PlanMostrado]) -> list[str]:
         for posicion in plan.resultado.posiciones:
             if Aviso.REGLA_RECOMPRA in posicion.avisos and posicion.nombre not in con_perdida:
                 con_perdida.append(posicion.nombre)
+                fondo_con_perdida |= posicion.operacion is not Escenario.VENTA_ETF
             if Aviso.REGIMEN_TRANSITORIO_ETF in posicion.avisos and posicion.nombre not in etf_antiguos:
                 etf_antiguos.append(posicion.nombre)
         if Aviso.SALDOS_CADUCADOS in plan.resultado.avisos:
@@ -329,8 +406,8 @@ def textos_avisos(planes: list[PlanMostrado]) -> list[str]:
             f"**Venta con pérdida ({', '.join(con_perdida)}).** Si recompras valores homogéneos en los "
             f"{normativa.PLAZO_RECOMPRA_MESES_MERCADO_REGULADO} meses anteriores o posteriores "
             f"({normativa.PLAZO_RECOMPRA_MESES_OTROS} meses si no cotizan en un mercado regulado), la pérdida "
-            "no se computa ahora: se integra cuando vendas los valores recomprados (art. 33.5 LIRPF). "
-            "El plazo aplicable a fondos no cotizados está pendiente de verificar.",
+            "no se computa ahora: se integra cuando vendas los valores recomprados (art. 33.5 LIRPF)."
+            + (" El plazo aplicable a fondos no cotizados está pendiente de verificar." if fondo_con_perdida else ""),
         )
     if etf_antiguos:
         textos.insert(
@@ -380,7 +457,9 @@ def mostrar_tarjetas(planes: list[PlanMostrado]) -> None:
             filas = [
                 ("Retención al vender", r.retencion),
                 ("Efecto en la Renta", r.regularizacion_renta),
-                ("Impuesto latente", r.impuesto_latente),
+                ("Impuesto latente", r.impuesto_latente)
+                if r.impuesto_latente >= 0
+                else ("Ahorro latente (pérdida aplazada)", -r.impuesto_latente),
             ]
             html = "".join(
                 f'<div class="fila"><span>{concepto}</span><span class="cifra">{formato_euros(importe)}</span></div>'
@@ -438,20 +517,33 @@ def resumen_neto(plan: ResultadoPlan) -> tuple[Decimal, Decimal, Decimal] | None
 
 
 def nota_plan(plan: ResultadoPlan) -> str:
-    """Retención, efecto en la Renta y ganancia aplazada del plan, en una o dos frases."""
+    """Retención, pérdida que se arrastra y lo que aplaza el traspaso, en frases cortas."""
     frases = []
     if plan.retencion > 0:
         frases.append(
             f"Al reembolsar se retienen {formato_euros(plan.retencion)}; el efecto en la Renta es de "
             f"{formato_euros(plan.regularizacion_renta)} (cuota menos retención)."
         )
-    traspasadas = [p for p in plan.posiciones if p.operacion is Escenario.TRASPASO_FONDO]
-    if traspasadas:
-        aplazada = sum((p.ganancia_patrimonial for p in traspasadas), Decimal("0"))
-        frases.append(
-            f"Con el traspaso aplazas {formato_euros(aplazada)} de ganancia; el impuesto latente es de "
-            f"{formato_euros(plan.impuesto_latente)}."
-        )
+    arrastre = _texto_arrastre(plan).strip()
+    if arrastre:
+        frases.append(arrastre)
+    ganancia, perdida = _traspasado(plan)
+    aplazado = " y ".join(
+        texto
+        for importe, texto in [
+            (ganancia, f"{formato_euros(ganancia)} de ganancia"),
+            (perdida, f"{formato_euros(perdida)} de pérdida"),
+        ]
+        if importe
+    )
+    if aplazado:
+        if plan.impuesto_latente > 0:
+            latente = f"; el impuesto latente es de {formato_euros(plan.impuesto_latente)}"
+        elif plan.impuesto_latente < 0:
+            latente = f"; el ahorro latente es de {formato_euros(-plan.impuesto_latente)}"
+        else:
+            latente = ""
+        frases.append(f"Con el traspaso aplazas {aplazado}{latente}.")
     return " ".join(frases)
 
 
@@ -466,7 +558,7 @@ def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]
         "(TIR) solo se muestra a partir de un año desde la primera compra."
     )
 
-    st.markdown("**De la ganancia al neto tras el IRPF**")
+    st.markdown("**La venta, antes y después del IRPF**")
     disponibles = [plan for plan in planes if plan.resultado is not None]
     titulo = st.radio("Plan", [plan.titulo for plan in disponibles], horizontal=True, label_visibility="collapsed")
     plan = next(plan.resultado for plan in disponibles if plan.titulo == titulo)
@@ -478,10 +570,10 @@ def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]
     ganancia, invertido, neto = resumen
     st.plotly_chart(figura_cascada(pasos_cascada(plan)), width="stretch", config={"displayModeBar": False})
     antes, impuesto, despues = st.columns(3)
-    antes.metric("Ganancia antes de impuestos", formato_euros(ganancia))
+    antes.metric("Ganancia antes de impuestos" if ganancia >= 0 else "Pérdida antes de impuestos", formato_euros(ganancia))
     antes.caption(f"{porcentaje(ganancia / invertido)} sobre lo invertido en lo que vendes")
     impuesto.metric(f"IRPF {normativa.EJERCICIO}", formato_euros(plan.cuota))
-    despues.metric("Neto tras impuestos", formato_euros(neto))
+    despues.metric("Neto tras impuestos" if neto >= 0 else "Pérdida tras impuestos", formato_euros(neto))
     despues.caption(f"{porcentaje(neto / invertido)} sobre lo invertido en lo que vendes")
     nota = nota_plan(plan)
     if nota:
