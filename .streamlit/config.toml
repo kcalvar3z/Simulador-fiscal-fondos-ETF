@@ -1,15 +1,11 @@
-# Tema de la app: Montserrat y paleta de verdes, con modo claro y modo oscuro.
+# Tema de la app: negro sobrio, con Montserrat y acentos en gris claro. Solo modo oscuro.
 #
-# Para retocarlo: cambia un valor, guarda y recarga la app (con `streamlit run app.py`
-# en marcha basta con recargar la página). Por defecto la app sigue el modo del sistema
-# del visitante; se puede cambiar a mano en el menú ⋮ → Settings.
-#
-# - [theme]: lo común a los dos modos (tipografías, esquinas).
-# - [theme.light] y [theme.dark]: los colores de cada modo.
+# Para retocarlo: cambia un valor, guarda y recarga la página. Si un cambio no se aplica,
+# para la app (Ctrl + C) y vuelve a arrancarla.
 # Los colores de las series de los gráficos están en simulador/graficos.py (COLOR_*).
 
 [theme]
-# Montserrat en todo, como la web de referencia.
+base = "dark"
 font = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
 headingFont = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
 headingFontWeights = 600
@@ -18,49 +14,27 @@ metricValueFontWeight = 600
 baseRadius = "3px"
 showWidgetBorder = true
 
-# Paleta de la web de referencia: verdes #16B182, #009A77, #307163 y #153A31, gris #EDEDED.
-# #16B182 es demasiado claro sobre blanco (2,75:1): en modo claro solo decora la cabecera.
-
-[theme.light]
-primaryColor = "#009a77"              # verde: deslizadores, selección, foco (3,6:1 sobre blanco)
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#ededed"  # fondo de los campos y de las cabeceras de tabla
-textColor = "#212529"
-grayTextColor = "#5c636a"
-borderColor = "#d9d9d9"
-linkColor = "#307163"                 # verde oscuro: 5,7:1 sobre blanco, apto para texto
-blueColor = "#307163"                 # avisos informativos, en verde
-blueBackgroundColor = "#e9f5f1"
-blueTextColor = "#153a31"
-yellowColor = "#9a5b00"               # advertencias
-yellowBackgroundColor = "#fbf3e4"
-yellowTextColor = "#6b4300"
-dataframeBorderColor = "#d9d9d9"
-dataframeHeaderBackgroundColor = "#ededed"
-dataframeHeaderTextColor = "#153a31"
-
-[theme.dark]
-primaryColor = "#16b182"              # el verde principal: 6,1:1 sobre el fondo oscuro
-backgroundColor = "#10201c"           # #153A31 oscurecido
-secondaryBackgroundColor = "#153a31"
-textColor = "#e9efed"
-grayTextColor = "#a9b8b3"
-borderColor = "#2a4a41"
-linkColor = "#16b182"
-blueColor = "#16b182"
-blueBackgroundColor = "#123029"
-blueTextColor = "#cfeee3"
-yellowColor = "#d6a24a"
+primaryColor = "#d9d9dc"              # gris claro: deslizadores, selección, foco
+backgroundColor = "#0b0b0c"           # negro
+secondaryBackgroundColor = "#17181a"  # fondo de los campos y de las cabeceras de tabla
+textColor = "#f2f2f2"
+grayTextColor = "#9a9a9f"
+borderColor = "#2c2d30"
+linkColor = "#d9d9dc"
+blueColor = "#d9d9dc"                 # avisos informativos, en gris
+blueBackgroundColor = "#17181a"
+blueTextColor = "#e6e6e6"
+yellowColor = "#d6a24a"               # advertencias
 yellowBackgroundColor = "#2b2414"
 yellowTextColor = "#e8c98a"
-dataframeBorderColor = "#2a4a41"
-dataframeHeaderBackgroundColor = "#153a31"
-dataframeHeaderTextColor = "#e9efed"
+dataframeBorderColor = "#2c2d30"
+dataframeHeaderBackgroundColor = "#17181a"
+dataframeHeaderTextColor = "#f2f2f2"
 
 [browser]
 # Sin estadísticas de uso de Streamlit: coherente con el aviso de privacidad de la app.
 gatherUsageStats = false
 
 [client]
-# Oculta las opciones de desarrollador, pero deja el menú con el cambio de modo claro/oscuro.
-toolbarMode = "viewer"
+# Oculta el botón «Deploy» y deja solo el menú mínimo.
+toolbarMode = "minimal"

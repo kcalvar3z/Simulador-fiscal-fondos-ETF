@@ -28,14 +28,14 @@ from simulador.escenarios import (
 from simulador.lotes import Lote, TipoProducto, Venta
 from simulador.rentabilidad import Rentabilidad
 
-# Estética de los gráficos de la app. El fondo, el texto y la rejilla los pone Streamlit según
-# el modo claro u oscuro del visitante; aquí solo van los colores de las series, validados
-# con la skill dataviz en los dos modos (fondos #ffffff y #10201c, todas las parejas):
-# banda de luminosidad, croma, separación con daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
-COLOR_RETENCION = "#c8553d"  # teja: impuestos
-COLOR_RENTA = "#009a77"  # verde: ganancias y valor actual
-COLOR_APLAZADO = "#3d6fb0"  # azul: totales y lo invertido
-COLOR_CONECTORES = "rgba(128, 128, 128, 0.5)"  # gris semitransparente: se ve en los dos modos
+# Estética de los gráficos de la app. El fondo, el texto y la rejilla los pone el tema de
+# Streamlit; aquí solo van los colores de las series. Azul y naranja, validados con la skill
+# dataviz sobre el fondo negro #0b0b0c (luminosidad, croma, daltonismo y contraste ≥ 3:1).
+# Los totales y lo invertido van en gris neutro, más claro que los dos, con su cifra rotulada.
+COLOR_RETENCION = "#d95926"  # naranja: impuestos
+COLOR_RENTA = "#3987e5"  # azul: ganancias y valor actual
+COLOR_APLAZADO = "#a8a8ad"  # gris claro: totales y lo invertido
+COLOR_CONECTORES = "rgba(128, 128, 128, 0.5)"  # gris semitransparente: se ve sobre el negro
 FUENTE = "Montserrat, Helvetica, Arial, sans-serif"
 
 # Estética del gráfico de LinkedIn: informe analítico sobre blanco, apaisado. Colores validados

@@ -490,22 +490,19 @@ def mostrar_visualizacion(posiciones: list[Posicion], planes: list[PlanMostrado]
 
 # --- Página ---------------------------------------------------------------------------------------
 
-# Los bordes y textos secundarios salen del color del texto del tema activo (currentColor).
-# Donde hace falta un color propio, light-dark(claro, oscuro) lo elige según el modo: Streamlit
-# declara color-scheme en .stApp. El resto de colores están en .streamlit/config.toml.
+# Sin colores fijos: bordes y textos secundarios salen del color del texto del tema
+# (currentColor). Los colores están en .streamlit/config.toml.
 ESTILOS = """
 <style>
 .cabecera {
-    border-top: 4px solid #16b182;
-    padding: 1.25rem 0 1.25rem;
+    padding: 0.5rem 0 1.25rem;
     margin-bottom: 1rem;
     border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
 }
 .cabecera .contexto { font-size: 0.9rem; opacity: 0.7; }
 .cabecera h1 { font-size: 2.4rem; line-height: 1.15; margin: 0.4rem 0 0.5rem; padding: 0; }
 .cabecera p { opacity: 0.8; margin: 0; max-width: 46rem; }
-.stApp h1, .stApp h2, .stApp h3 { color: light-dark(#153a31, #e9efed); }
-.titulo-plan { font-weight: 600; margin-bottom: 0.25rem; color: light-dark(#307163, #16b182); }
+.titulo-plan { font-weight: 600; margin-bottom: 0.25rem; }
 [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
 .cifras .fila {
     display: flex;
