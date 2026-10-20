@@ -65,7 +65,7 @@ Cada regla vive en [`simulador/normativa.py`](simulador/normativa.py) con su art
 - **Cuota incremental.** La cuota atribuible a una venta es la de la base del ahorro con la venta menos la de sin ella, después de compensar con el resto de rentas del año. Con varios productos se muestra en total: con una escala progresiva no hay una forma única de repartirla entre ellos.
 - **Compensación completa del art. 49 LIRPF**, en los dos sentidos, con arrastre y caducidad a cuatro años y el orden y el límite conjunto del 25 % del Manual de Renta de la AEAT.
 - **Rentabilidad anual por TIR** (bisección con `Decimal`), que pondera cuándo entró cada euro. No se anualizan periodos inferiores a un año.
-- **Tests con casos resueltos a mano.** Cada cálculo se contrasta con un caso desarrollado paso a paso en [`examples.md`](.claude/skills/calculo-plusvalias/examples.md), incluido el caso práctico de compensación del Manual de la AEAT. 102 tests con `pytest`, también de la app completa.
+- **Tests con casos resueltos a mano.** Cada cálculo se contrasta con un caso desarrollado paso a paso en [`examples.md`](.claude/skills/calculo-plusvalias/examples.md), incluido el caso práctico de compensación del Manual de la AEAT. 107 tests con `pytest`, también de la app completa.
 - **Gráficos accesibles.** Paletas validadas para daltonismo y contraste; los gráficos dibujan los resultados del simulador, nunca cifras propias.
 
 ## Estructura
