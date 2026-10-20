@@ -1,4 +1,4 @@
-# Tema de la app: estilo de informe de despacho, con modo claro y modo oscuro.
+# Tema de la app: Montserrat y paleta de verdes, con modo claro y modo oscuro.
 #
 # Para retocarlo: cambia un valor, guarda y recarga la app (con `streamlit run app.py`
 # en marcha basta con recargar la página). Por defecto la app sigue el modo del sistema
@@ -9,52 +9,55 @@
 # Los colores de las series de los gráficos están en simulador/graficos.py (COLOR_*).
 
 [theme]
-# Texto: Public Sans, sobria y muy legible. Títulos: Source Serif 4, con serifa, de informe.
-font = "'Public Sans':https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
-headingFont = "'Source Serif 4':https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap, Georgia, serif"
+# Montserrat en todo, como la web de referencia.
+font = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
+headingFont = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap, Helvetica, Arial, sans-serif"
 headingFontWeights = 600
 metricValueFontSize = "1.9rem"
 metricValueFontWeight = 600
 baseRadius = "3px"
 showWidgetBorder = true
 
+# Paleta de la web de referencia: verdes #16B182, #009A77, #307163 y #153A31, gris #EDEDED.
+# #16B182 es demasiado claro sobre blanco (2,75:1): en modo claro solo decora la cabecera.
+
 [theme.light]
 base = "light"
-primaryColor = "#1f3a5f"              # azul marino: botones, deslizadores, selección
-backgroundColor = "#fbfaf7"           # marfil, como el papel
-secondaryBackgroundColor = "#f1efea"  # fondo de los campos y de las cabeceras de tabla
-textColor = "#1d1d1f"
-grayTextColor = "#5f6368"
-borderColor = "#dcd8cf"
-linkColor = "#1f3a5f"
-blueColor = "#1f3a5f"                 # avisos informativos
-blueBackgroundColor = "#eef2f7"
-blueTextColor = "#1f3a5f"
+primaryColor = "#009a77"              # verde: deslizadores, selección, foco (3,6:1 sobre blanco)
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#ededed"  # fondo de los campos y de las cabeceras de tabla
+textColor = "#212529"
+grayTextColor = "#5c636a"
+borderColor = "#d9d9d9"
+linkColor = "#307163"                 # verde oscuro: 5,7:1 sobre blanco, apto para texto
+blueColor = "#307163"                 # avisos informativos, en verde
+blueBackgroundColor = "#e9f5f1"
+blueTextColor = "#153a31"
 yellowColor = "#9a5b00"               # advertencias
 yellowBackgroundColor = "#fbf3e4"
 yellowTextColor = "#6b4300"
-dataframeBorderColor = "#dcd8cf"
-dataframeHeaderBackgroundColor = "#f1efea"
-dataframeHeaderTextColor = "#1d1d1f"
+dataframeBorderColor = "#d9d9d9"
+dataframeHeaderBackgroundColor = "#ededed"
+dataframeHeaderTextColor = "#153a31"
 
 [theme.dark]
 base = "dark"
-primaryColor = "#8fb0d9"              # el mismo azul, aclarado para que se lea sobre oscuro
-backgroundColor = "#16181c"
-secondaryBackgroundColor = "#1f2227"
-textColor = "#e6e4df"
-grayTextColor = "#a3a29d"
-borderColor = "#33363c"
-linkColor = "#8fb0d9"
-blueColor = "#8fb0d9"
-blueBackgroundColor = "#1b2533"
-blueTextColor = "#c9d9ee"
+primaryColor = "#16b182"              # el verde principal: 6,1:1 sobre el fondo oscuro
+backgroundColor = "#10201c"           # #153A31 oscurecido
+secondaryBackgroundColor = "#153a31"
+textColor = "#e9efed"
+grayTextColor = "#a9b8b3"
+borderColor = "#2a4a41"
+linkColor = "#16b182"
+blueColor = "#16b182"
+blueBackgroundColor = "#123029"
+blueTextColor = "#cfeee3"
 yellowColor = "#d6a24a"
 yellowBackgroundColor = "#2b2414"
 yellowTextColor = "#e8c98a"
-dataframeBorderColor = "#33363c"
-dataframeHeaderBackgroundColor = "#1f2227"
-dataframeHeaderTextColor = "#e6e4df"
+dataframeBorderColor = "#2a4a41"
+dataframeHeaderBackgroundColor = "#153a31"
+dataframeHeaderTextColor = "#e9efed"
 
 [browser]
 # Sin estadísticas de uso de Streamlit: coherente con el aviso de privacidad de la app.

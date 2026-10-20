@@ -30,13 +30,13 @@ from simulador.rentabilidad import Rentabilidad
 
 # Estética de los gráficos de la app. El fondo, el texto y la rejilla los pone Streamlit según
 # el modo claro u oscuro del visitante; aquí solo van los colores de las series, validados
-# con la skill dataviz en los dos modos (fondos #fbfaf7 y #16181c, todas las parejas):
+# con la skill dataviz en los dos modos (fondos #ffffff y #10201c, todas las parejas):
 # banda de luminosidad, croma, separación con daltonismo (ΔE ≥ 8) y contraste ≥ 3:1.
 COLOR_RETENCION = "#c8553d"  # teja: impuestos
-COLOR_RENTA = "#2a9d8f"  # verde azulado: ganancias y valor actual
+COLOR_RENTA = "#009a77"  # verde: ganancias y valor actual
 COLOR_APLAZADO = "#3d6fb0"  # azul: totales y lo invertido
 COLOR_CONECTORES = "rgba(128, 128, 128, 0.5)"  # gris semitransparente: se ve en los dos modos
-FUENTE = "Public Sans, Helvetica, Arial, sans-serif"
+FUENTE = "Montserrat, Helvetica, Arial, sans-serif"
 
 # Estética del gráfico de LinkedIn: informe analítico sobre blanco, apaisado. Colores validados
 # con la skill dataviz en modo claro sobre blanco (todas las parejas, sin avisos).
